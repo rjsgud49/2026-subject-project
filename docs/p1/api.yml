@@ -1,0 +1,459 @@
+openapi: 3.0.3
+info:
+  title: 면접 인강 플랫폼 API (P1)
+  description: 고객(학생) 기능 - 검색, 수강신청, 내 수업, 수업 듣기, 질문하기
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: courses
+    description: 강의 검색·상세
+  - name: cart
+    description: 장바구니
+  - name: enrollments
+    description: 수강신청·내 수업
+  - name: progress
+    description: 영상 진도
+  - name: qna
+    description: 질문·답변
+
+paths:
+  # ---- 강의 검색·상세 ----
+  /courses:
+    get:
+      tags: [courses]
+      summary: 강의 목록 검색
+      parameters:
+        - name: q
+          in: query
+          description: 키워드(제목 등)
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string, example: "기술면접" }
+        - name: difficulty
+          in: query
+          schema: { type: string, enum: [초급, 중급, 고급] }
+        - name: min_price
+          in: query
+          schema: { type: number }
+        - name: max_price
+          in: query
+          schema: { type: number }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [latest, price_asc, price_desc, popular], default: latest }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 12 }
+      responses:
+        '200':
+          description: 강의 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/CourseSummary' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  size: { type: integer }
+
+  /courses/{courseId}:
+    get:
+      tags: [courses]
+      summary: 강의 상세 (커리큘럼 포함)
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 강의 상세
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseDetail' }
+        '404':
+          description: 강의 없음
+
+  # ---- 장바구니 ----
+  /cart:
+    get:
+      tags: [cart]
+      summary: 장바구니 목록
+      responses:
+        '200':
+          description: 장바구니 항목 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CartItem' }
+    post:
+      tags: [cart]
+      summary: 장바구니 담기
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id]
+              properties:
+                course_id: { type: integer }
+      responses:
+        '201':
+          description: 담기 성공
+        '409':
+          description: 이미 담김 또는 이미 수강 중
+
+  /cart/{courseId}:
+    delete:
+      tags: [cart]
+      summary: 장바구니에서 제거
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 삭제됨
+
+  # ---- 수강신청·내 수업 ----
+  /enrollments:
+    get:
+      tags: [enrollments]
+      summary: 내 수업 목록 (진도율·수료 포함)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, completed] }
+      responses:
+        '200':
+          description: 수강 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EnrollmentWithProgress' }
+    post:
+      tags: [enrollments]
+      summary: 수강신청 (간이 결제 후 호출)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id]
+              properties:
+                course_id: { type: integer }
+      responses:
+        '201':
+          description: 수강신청 완료
+        '409':
+          description: 이미 수강 중
+
+  /enrollments/{enrollmentId}:
+    get:
+      tags: [enrollments]
+      summary: 수강 상세 (이어보기용)
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 수강 정보 + 마지막 시청 영상/위치
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrollmentDetail' }
+
+  # ---- 영상 진도 ----
+  /enrollments/{enrollmentId}/progress:
+    get:
+      tags: [progress]
+      summary: 강의별 영상 진도 목록
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 영상별 진도
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/VideoProgress' }
+
+  /enrollments/{enrollmentId}/videos/{videoId}/progress:
+    put:
+      tags: [progress]
+      summary: 진도 저장 (시청 위치·완료)
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: videoId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                last_second: { type: integer, description: "마지막 시청 초" }
+                completed: { type: boolean }
+      responses:
+        '200':
+          description: 저장됨
+
+  # ---- Q&A ----
+  /courses/{courseId}/questions:
+    get:
+      tags: [qna]
+      summary: 강의별 질문 목록
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 질문 목록
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/QuestionSummary' } }
+                  total: { type: integer }
+    post:
+      tags: [qna]
+      summary: 질문 등록
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string }
+                body: { type: string }
+                is_private: { type: boolean, default: false }
+      responses:
+        '201':
+          description: 등록됨
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Question' }
+
+  /questions/{questionId}:
+    get:
+      tags: [qna]
+      summary: 질문 상세 + 답변 목록
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: 질문 + 답변 목록
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestionDetail' }
+    put:
+      tags: [qna]
+      summary: 질문 수정 (본인만)
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                body: { type: string }
+      responses:
+        '200':
+          description: 수정됨
+    delete:
+      tags: [qna]
+      summary: 질문 삭제 (본인만)
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204':
+          description: 삭제됨
+
+  /questions/{questionId}/answers:
+    post:
+      tags: [qna]
+      summary: 답변 등록
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string }
+      responses:
+        '201':
+          description: 답변 등록됨
+
+components:
+  schemas:
+    CourseSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        instructor_name: { type: string }
+        category: { type: string }
+        difficulty: { type: string }
+        price: { type: number }
+        thumbnail_url: { type: string }
+        created_at: { type: string, format: date-time }
+
+    CourseDetail:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        instructor_id: { type: integer }
+        instructor_name: { type: string }
+        category: { type: string }
+        difficulty: { type: string }
+        price: { type: number }
+        thumbnail_url: { type: string }
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              sort_order: { type: integer }
+              videos:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    title: { type: string }
+                    duration_seconds: { type: integer }
+                    sort_order: { type: integer }
+
+    CartItem:
+      type: object
+      properties:
+        id: { type: integer }
+        course_id: { type: integer }
+        course_title: { type: string }
+        price: { type: number }
+        added_at: { type: string, format: date-time }
+
+    EnrollmentWithProgress:
+      type: object
+      properties:
+        id: { type: integer }
+        course_id: { type: integer }
+        course_title: { type: string }
+        thumbnail_url: { type: string }
+        progress_percent: { type: number }
+        status: { type: string, enum: [active, completed] }
+        last_video_id: { type: integer, nullable: true }
+        last_second: { type: integer, nullable: true }
+
+    EnrollmentDetail:
+      type: object
+      properties:
+        id: { type: integer }
+        course: { $ref: '#/components/schemas/CourseDetail' }
+        last_video_id: { type: integer, nullable: true }
+        last_second: { type: integer, nullable: true }
+        progress_percent: { type: number }
+
+    VideoProgress:
+      type: object
+      properties:
+        video_id: { type: integer }
+        last_second: { type: integer }
+        completed: { type: boolean }
+        updated_at: { type: string, format: date-time }
+
+    QuestionSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        user_name: { type: string }
+        answer_count: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    Question:
+      type: object
+      properties:
+        id: { type: integer }
+        course_id: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        user_id: { type: integer }
+        user_name: { type: string }
+        created_at: { type: string, format: date-time }
+
+    QuestionDetail:
+      type: object
+      properties:
+        question: { $ref: '#/components/schemas/Question' }
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              body: { type: string }
+              user_name: { type: string }
+              created_at: { type: string, format: date-time }
