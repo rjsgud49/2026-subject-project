@@ -1,0 +1,128 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+// 면접 인강 플랫폼 P1 - dbdiagram.io 에서 import 하여 다이어그램 생성
+
+Table users {
+  id integer [primary key, note: '사용자 ID']
+  email varchar(255) [unique, not null, note: '로그인 ID']
+  name varchar(100) [note: '이름']
+  password_hash varchar(255) [note: '비밀번호 해시, P2에서 본격 사용']
+  role varchar(20) [note: 'admin / instructor / student, P2']
+  created_at timestamp [note: '가입일']
+  updated_at timestamp [note: '수정일']
+}
+
+Table courses {
+  id integer [primary key, note: '강의 ID']
+  title varchar(300) [not null, note: '제목']
+  description text [note: '소개']
+  instructor_id integer [not null, note: '강사 ID']
+  category varchar(50) [note: '기술면접, 인성면접, PT면접 등']
+  difficulty varchar(20) [note: '초급/중급/고급']
+  price decimal(10,2) [note: '0이면 무료']
+  thumbnail_url varchar(500) [note: '썸네일 URL']
+  is_published boolean [note: '공개 여부']
+  created_at timestamp [note: '생성일']
+  updated_at timestamp [note: '수정일']
+}
+
+Table course_sections {
+  id integer [primary key, note: '섹션 ID']
+  course_id integer [not null, note: '강의 ID']
+  title varchar(200) [note: '섹션 제목']
+  sort_order integer [note: '목차 순서']
+}
+
+Table course_videos {
+  id integer [primary key, note: '영상 ID']
+  section_id integer [not null, note: '섹션 ID']
+  title varchar(200) [note: '영상 제목']
+  video_url varchar(500) [note: '영상 URL']
+  duration_seconds integer [note: '재생 시간(초)']
+  sort_order integer [note: '섹션 내 순서']
+}
+
+Table enrollments {
+  id integer [primary key, note: '수강 ID']
+  user_id integer [not null, note: '수강생 ID']
+  course_id integer [not null, note: '강의 ID']
+  enrolled_at timestamp [note: '수강신청일']
+  status varchar(20) [note: 'active / completed']
+
+  Indexes {
+    (user_id, course_id) [unique]
+  }
+}
+
+Table video_progress {
+  id integer [primary key, note: '진도 ID']
+  enrollment_id integer [not null, note: '수강 ID']
+  video_id integer [not null, note: '영상 ID']
+  last_second integer [note: '마지막 시청 위치(초)']
+  completed boolean [note: '해당 영상 완료 여부']
+  updated_at timestamp [note: '마지막 시청 시각']
+
+  Indexes {
+    (enrollment_id, video_id) [unique]
+  }
+}
+
+Table cart_items {
+  id integer [primary key, note: '장바구니 항목 ID']
+  user_id integer [not null, note: '사용자 ID']
+  course_id integer [not null, note: '강의 ID']
+  added_at timestamp [note: '담은 시각']
+
+  Indexes {
+    (user_id, course_id) [unique]
+  }
+}
+
+Table questions {
+  id integer [primary key, note: '질문 ID']
+  course_id integer [not null, note: '강의 ID']
+  user_id integer [not null, note: '질문자 ID']
+  title varchar(200) [not null, note: '제목']
+  body text [not null, note: '본문']
+  is_private boolean [note: '비공개 여부']
+  created_at timestamp [note: '작성일']
+  updated_at timestamp [note: '수정일']
+}
+
+Table answers {
+  id integer [primary key, note: '답변 ID']
+  question_id integer [not null, note: '질문 ID']
+  user_id integer [not null, note: '답변자 ID']
+  body text [not null, note: '답변 내용']
+  created_at timestamp [note: '작성일']
+  updated_at timestamp [note: '수정일']
+}
+
+// 관계: courses.instructor_id -> users.id (다대일)
+Ref: courses.instructor_id > users.id
+
+// 관계: course_sections.course_id -> courses.id
+Ref: course_sections.course_id > courses.id
+
+// 관계: course_videos.section_id -> course_sections.id
+Ref: course_videos.section_id > course_sections.id
+
+// 관계: enrollments -> users, courses
+Ref: enrollments.user_id > users.id
+Ref: enrollments.course_id > courses.id
+
+// 관계: video_progress -> enrollments, course_videos
+Ref: video_progress.enrollment_id > enrollments.id
+Ref: video_progress.video_id > course_videos.id
+
+// 관계: cart_items -> users, courses
+Ref: cart_items.user_id > users.id
+Ref: cart_items.course_id > courses.id
+
+// 관계: questions -> courses, users
+Ref: questions.course_id > courses.id
+Ref: questions.user_id > users.id
+
+// 관계: answers -> questions, users
+Ref: answers.question_id > questions.id
+Ref: answers.user_id > users.id
