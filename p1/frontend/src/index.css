@@ -1,0 +1,145 @@
+:root {
+  --color-text: #111827;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-bg: #f9fafb;
+  --color-surface: #ffffff;
+  /* 인프런 톤 */
+  --color-brand: #00c73c;
+  --color-brand-dark: #00a832;
+  --color-brand-soft: #e8f9ed;
+  --color-accent: #00c73c;
+  --color-accent-hover: #00a832;
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --max-w: 1200px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    'Pretendard',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Malgun Gothic',
+    sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-brand-dark);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-2);
+}
+
+/* Form controls */
+.ui-input,
+.ui-select,
+.ui-textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ui-input:focus,
+.ui-select:focus,
+.ui-textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-soft);
+}
+
+.ui-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 42px;
+  background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%),
+    linear-gradient(to right, transparent, transparent);
+  background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 13px) calc(50% - 3px),
+    calc(100% - 2.6rem) 0.4rem;
+  background-size: 6px 6px, 6px 6px, 1px 1.6rem;
+  background-repeat: no-repeat;
+}
+
+.ui-select:hover {
+  border-color: #d1d5db;
+}
+
+/* 링크형 CTA (랜딩 등) */
+.btn-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff !important;
+  text-decoration: none !important;
+  background: var(--color-brand);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 199, 60, 0.35);
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s;
+}
+.btn-cta-primary:hover {
+  background: var(--color-brand-dark) !important;
+  box-shadow: 0 6px 20px rgba(0, 199, 60, 0.4);
+  transform: translateY(-1px);
+  text-decoration: none !important;
+}
+
+.btn-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text) !important;
+  text-decoration: none !important;
+  background: #fff;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.btn-cta-secondary:hover {
+  border-color: var(--color-brand);
+  background: var(--color-brand-soft);
+  text-decoration: none !important;
+}
