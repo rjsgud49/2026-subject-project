@@ -1,9 +1,0 @@
-export { User } from './user.entity';
-export { Course } from './course.entity';
-export { CourseSection } from './course-section.entity';
-export { CourseVideo } from './course-video.entity';
-export { Enrollment } from './enrollment.entity';
-export { VideoProgress } from './video-progress.entity';
-export { CartItem } from './cart-item.entity';
-export { Question } from './question.entity';
-export { Answer } from './answer.entity';
