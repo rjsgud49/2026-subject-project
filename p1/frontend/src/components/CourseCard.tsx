@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/format';
 
@@ -10,6 +11,8 @@ export default function CourseCard({
   viewMode?: 'grid' | 'list';
   isEnrolled?: boolean;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   if (viewMode === 'list') {
     return (
       <Link
@@ -89,19 +92,19 @@ export default function CourseCard({
         background: 'var(--color-surface)',
         borderRadius: 'var(--radius-lg)',
         border: '1px solid var(--color-border)',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow)',
+        overflow: 'visible',
+        boxShadow: hovered ? 'var(--shadow-md)' : 'var(--shadow)',
         textDecoration: 'none',
         color: 'inherit',
-        transition: 'box-shadow 0.2s',
+        transition: 'box-shadow 0.2s, transform 0.2s',
+        transform: hovered ? 'translateY(-4px)' : 'none',
+        position: 'relative',
+        zIndex: hovered ? 10 : 1,
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow)';
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
+      {/* 썸네일 영역 */}
       <div
         style={{
           aspectRatio: '16/9',
@@ -111,6 +114,8 @@ export default function CourseCard({
           justifyContent: 'center',
           fontSize: 48,
           position: 'relative',
+          borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+          overflow: 'hidden',
         }}
       >
         {course.thumbnail_url ? (
@@ -131,12 +136,83 @@ export default function CourseCard({
               padding: '6px 10px',
               borderRadius: 999,
               boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+              zIndex: 2,
             }}
           >
             이미 구매함
           </span>
         )}
+
+        {/* 호버 오버레이 — 요약 정보 */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(17,24,39,0.88)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            padding: '16px 18px',
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 0.2s',
+            pointerEvents: 'none',
+          }}
+        >
+          {/* 설명 */}
+          {course.description && (
+            <p
+              style={{
+                color: '#e5e7eb',
+                fontSize: 13,
+                lineHeight: 1.6,
+                margin: '0 0 12px',
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {course.description}
+            </p>
+          )}
+          {/* 메타 정보 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {course.instructor_name && (
+              <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                강사 · <span style={{ color: '#d1d5db', fontWeight: 600 }}>{course.instructor_name}</span>
+              </span>
+            )}
+            {course.difficulty && (
+              <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                난이도 · <span style={{ color: '#d1d5db', fontWeight: 600 }}>{course.difficulty}</span>
+              </span>
+            )}
+            {course.estimated_hours != null && (
+              <span style={{ color: '#9ca3af', fontSize: 12 }}>
+                수강시간 · <span style={{ color: '#d1d5db', fontWeight: 600 }}>약 {course.estimated_hours}시간</span>
+              </span>
+            )}
+          </div>
+          {/* CTA */}
+          <div
+            style={{
+              marginTop: 14,
+              padding: '8px 0',
+              textAlign: 'center',
+              background: 'var(--color-brand)',
+              borderRadius: 8,
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 0.3,
+            }}
+          >
+            강의 보러 가기 →
+          </div>
+        </div>
       </div>
+
+      {/* 카드 하단 텍스트 */}
       <div style={{ padding: 16 }}>
         <span
           style={{
