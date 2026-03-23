@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { loadPlayer, setCurrentVideo, setPlaybackRate, saveVideoProgressThunk, resetPlayer } from '../features/playerSlice';
 import VideoPlayer from '../components/VideoPlayer';
+import Modal from '../components/Modal';
 import { formatDuration } from '../utils/format';
 import Tabs from '../components/Tabs';
 import Button from '../components/Button';
@@ -13,6 +14,7 @@ export default function VideoPlayerPage() {
   const dispatch = useAppDispatch();
   const { enrollment, currentVideo, progress, playbackRate, status } = useAppSelector((s) => s.player) as any;
   const [bottomTab, setBottomTab] = useState('outline');
+  const [showNextModal, setShowNextModal] = useState(false);
   const qa = useAppSelector((s) => s.qa.byCourse[Number(enrollment?.course?.id)]) as any;
   const saveRef = useRef<any>(null);
 
@@ -58,6 +60,21 @@ export default function VideoPlayerPage() {
 
   const startSec = currentVideo?.id ? progressMap[currentVideo.id]?.last_second ?? 0 : 0;
 
+  const currentIdx = useMemo(
+    () => allVideos.findIndex(({ video }) => video.id === currentVideo?.id),
+    [allVideos, currentVideo?.id]
+  );
+  const nextVideo = currentIdx >= 0 && currentIdx < allVideos.length - 1 ? allVideos[currentIdx + 1] : null;
+
+  const handleEnded = () => {
+    if (nextVideo) setShowNextModal(true);
+  };
+
+  const goNextVideo = () => {
+    setShowNextModal(false);
+    dispatch(setCurrentVideo({ ...nextVideo!.video, sectionTitle: nextVideo!.sectionTitle }) as any);
+  };
+
   if (status === 'loading' || !enrollment) {
     return <div style={{ padding: 48, textAlign: 'center' }}>불러오는 중…</div>;
   }
@@ -70,6 +87,36 @@ export default function VideoPlayerPage() {
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 24px' }}>
+      {/* 다음 영상 이동 확인 팝업 */}
+      <Modal
+        open={showNextModal}
+        onClose={() => setShowNextModal(false)}
+        title="영상이 종료되었습니다"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowNextModal(false)}>
+              현재 영상 유지
+            </Button>
+            <Button onClick={goNextVideo}>
+              다음 영상으로 →
+            </Button>
+          </>
+        }
+      >
+        <p style={{ margin: 0 }}>
+          다음 영상으로 넘어가시겠습니까?
+        </p>
+        {nextVideo && (
+          <p style={{ margin: '10px 0 0', fontSize: 14, color: 'var(--color-muted)' }}>
+            <strong style={{ color: 'var(--color-text)' }}>
+              {nextVideo.sectionTitle} · {nextVideo.video.title}
+            </strong>
+            {nextVideo.video.duration_seconds != null && (
+              <span> ({formatDuration(nextVideo.video.duration_seconds)})</span>
+            )}
+          </p>
+        )}
+      </Modal>
       <p>
         <Link to="/dashboard">← 내 강의실</Link>
       </p>
@@ -82,6 +129,7 @@ export default function VideoPlayerPage() {
             playbackRate={playbackRate}
             onPlaybackRateChange={(r: number) => dispatch(setPlaybackRate(r))}
             onTimeUpdate={onTimeUpdate}
+            onEnded={handleEnded}
             startSeconds={startSec}
           />
           {currentVideo && (

@@ -8,12 +8,14 @@ export default function VideoPlayer({
   playbackRate,
   onPlaybackRateChange,
   onTimeUpdate,
+  onEnded,
   startSeconds = 0,
 }: {
   src?: string;
   playbackRate: number;
   onPlaybackRateChange: (rate: number) => void;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
+  onEnded?: () => void;
   startSeconds?: number;
 }) {
   const ref = useRef<HTMLVideoElement | null>(null);
@@ -66,6 +68,7 @@ export default function VideoPlayer({
           const el = ref.current;
           if (el && onTimeUpdate) onTimeUpdate(el.currentTime, el.duration);
         }}
+        onEnded={() => onEnded?.()}
       />
       <div
         style={{
