@@ -109,11 +109,18 @@ export default function Dashboard() {
                 <p style={{ fontSize: 14, color: 'var(--color-muted)', margin: '8px 0 16px' }}>
                   진도 {e.progress_percent ?? 0}%
                 </p>
-                <Link to={`/learn/${e.id}`}>
-                  <Button size="sm" style={{ width: '100%', justifyContent: 'center' }}>
-                    {e.last_video_id ? '이어보기' : '학습하기'}
-                  </Button>
-                </Link>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Link to={`/learn/${e.id}`} style={{ flex: 1 }}>
+                    <Button size="sm" style={{ width: '100%', justifyContent: 'center' }}>
+                      {e.last_video_id ? '이어보기' : '학습하기'}
+                    </Button>
+                  </Link>
+                  <Link to={`/courses/${e.course_id}?tab=qa`}>
+                    <Button variant="secondary" size="sm" style={{ whiteSpace: 'nowrap' }}>
+                      Q&amp;A
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           ))}

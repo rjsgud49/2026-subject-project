@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { fetchCourseDetail, setActiveTab } from '../features/coursesSlice';
 import { addToCartThunk, fetchCart } from '../features/cartSlice';
@@ -14,6 +14,7 @@ import { formatPrice } from '../utils/format';
 export default function CourseDetail() {
   const { courseId } = useParams();
   const nav = useNavigate();
+  const { search } = useLocation();
   const dispatch = useAppDispatch();
   const [showCartModal, setShowCartModal] = useState(false);
   const { courseDetail, detailStatus, activeTab } = useAppSelector((s) => s.courses);
@@ -26,6 +27,13 @@ export default function CourseDetail() {
   useEffect(() => {
     if (courseId) dispatch(fetchQuestions(Number(courseId)));
   }, [courseId, dispatch]);
+
+  // ?tab=qa 쿼리 파라미터가 있으면 Q&A 탭 자동 활성화
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const tab = params.get('tab');
+    if (tab === 'qa') dispatch(setActiveTab('qa'));
+  }, [search, dispatch]);
 
   const addCart = async () => {
     const r = await dispatch(addToCartThunk(Number(courseId)));
