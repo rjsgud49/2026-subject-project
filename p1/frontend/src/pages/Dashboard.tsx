@@ -2,13 +2,22 @@ import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { fetchEnrollments, setEnrollmentFilter, setEnrollmentSort } from '../features/enrollmentSlice';
+import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import ProgressBar from '../components/ProgressBar';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 
+const PLAN_META = [
+  { id: 'doc' as const,     name: '문서 피드백',   icon: '📄', accent: '#3b82f6' },
+  { id: 'video' as const,   name: '영상 피드백',   icon: '🎬', accent: '#00c73c' },
+  { id: 'premium' as const, name: '심층 피드백',   icon: '🏅', accent: '#7c3aed' },
+];
+
 export default function Dashboard() {
   const dispatch = useAppDispatch();
   const { list, filter, sort } = useAppSelector((s) => s.enrollment);
+  const { tickets } = useFeedbackTickets();
+  const totalTickets = tickets.doc + tickets.video + tickets.premium;
 
   useEffect(() => {
     dispatch(fetchEnrollments());
@@ -26,6 +35,78 @@ export default function Dashboard() {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
       <h1 style={{ fontSize: 28, marginBottom: 8 }}>내 강의실</h1>
       <p style={{ color: 'var(--color-muted)', marginBottom: 24 }}>수강 중인 강의와 진도를 확인하세요.</p>
+
+      {/* 피드백 이용권 현황 */}
+      <div
+        style={{
+          padding: '20px 24px',
+          background: totalTickets > 0 ? '#f0fdf4' : 'var(--color-surface)',
+          border: `1px solid ${totalTickets > 0 ? 'var(--color-brand)' : 'var(--color-border)'}`,
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 32,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 16,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 18 }}>🎟️</span>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>피드백 이용권</span>
+            {totalTickets > 0 && (
+              <span
+                style={{
+                  background: 'var(--color-brand)',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: '2px 10px',
+                  borderRadius: 20,
+                }}
+              >
+                총 {totalTickets}회 보유
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {PLAN_META.map((p) => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+                <span>{p.icon}</span>
+                <span style={{ color: 'var(--color-muted)' }}>{p.name}</span>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    background: tickets[p.id] > 0 ? p.accent : '#e5e7eb',
+                    color: tickets[p.id] > 0 ? '#fff' : '#9ca3af',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    padding: '0 7px',
+                  }}
+                >
+                  {tickets[p.id]}회
+                </span>
+              </div>
+            ))}
+          </div>
+          {totalTickets === 0 && (
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--color-muted)' }}>
+              보유한 피드백 이용권이 없습니다.
+            </p>
+          )}
+        </div>
+        <Link to="/feedback">
+          <Button variant={totalTickets > 0 ? 'primary' : 'secondary'} size="sm">
+            {totalTickets > 0 ? '이용권 사용하기' : '이용권 구매하기'}
+          </Button>
+        </Link>
+      </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center' }}>
         {(['all', 'active', 'completed'] as const).map((f) => (

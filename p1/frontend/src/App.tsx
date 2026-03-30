@@ -13,6 +13,10 @@ import QuestionDetail from './pages/QuestionDetail';
 import QuestionEdit from './pages/QuestionEdit';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import FeedbackMain from './pages/FeedbackMain';
+import FeedbackBuy from './pages/FeedbackBuy';
+import FeedbackNew from './pages/FeedbackNew';
+import FeedbackHistory from './pages/FeedbackHistory';
 
 export default function App() {
   return (
@@ -49,6 +53,10 @@ export default function App() {
           }
         />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/feedback" element={<FeedbackMain />} />
+        <Route path="/feedback/buy" element={<FeedbackBuy />} />
+        <Route path="/feedback/new" element={<FeedbackNew />} />
+        <Route path="/feedback/history" element={<FeedbackHistory />} />
         <Route
           path="/dashboard"
           element={

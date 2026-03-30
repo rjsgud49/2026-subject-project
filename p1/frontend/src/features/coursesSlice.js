@@ -3,7 +3,8 @@ import { api } from '../services/api';
 
 const initialFilters = {
   q: '',
-  category: '',
+  category: '',     // 1단계: 면접 방식 (API로 전달)
+  jobField: '',     // 2단계: 직무/분야 (클라이언트 필터링)
   difficulty: '',
   min_price: '',
   max_price: '',

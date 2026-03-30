@@ -4,11 +4,32 @@ import { api } from '../services/api';
 import { formatPrice } from '../utils/format';
 
 const CATEGORIES = [
-  { label: '기술면접', emoji: '💻' },
-  { label: '인성면접', emoji: '🤝' },
-  { label: 'PT면접', emoji: '📊' },
-  { label: '영어면접', emoji: '🌐' },
-  { label: 'IT직무', emoji: '🖥️' },
+  // 기술면접 세부 영역
+  { label: '웹/프론트엔드', emoji: '🌐', group: '기술면접' },
+  { label: '백엔드/서버', emoji: '⚙️', group: '기술면접' },
+  { label: '알고리즘/자료구조', emoji: '🧩', group: '기술면접' },
+  { label: '데이터베이스', emoji: '🗄️', group: '기술면접' },
+  { label: '시스템설계', emoji: '🏗️', group: '기술면접' },
+  { label: 'DevOps/클라우드', emoji: '☁️', group: '기술면접' },
+  { label: '데이터/AI', emoji: '🤖', group: '기술면접' },
+  { label: '모바일(Android/iOS)', emoji: '📱', group: '기술면접' },
+  { label: '보안/네트워크', emoji: '🔒', group: '기술면접' },
+  { label: 'CS기초', emoji: '📖', group: '기술면접' },
+  // 면접 유형
+  { label: '인성면접', emoji: '🤝', group: '면접 유형' },
+  { label: 'PT면접', emoji: '📊', group: '면접 유형' },
+  { label: '영어면접', emoji: '💬', group: '면접 유형' },
+  { label: '그룹면접', emoji: '👥', group: '면접 유형' },
+  // 직무별
+  { label: '금융/은행', emoji: '🏦', group: '직무별' },
+  { label: '마케팅/광고', emoji: '📣', group: '직무별' },
+  { label: '영업', emoji: '🤝', group: '직무별' },
+  { label: '의료/간호', emoji: '🏥', group: '직무별' },
+  { label: '공무원/공기업', emoji: '🏛️', group: '직무별' },
+  { label: '교육/강사', emoji: '📚', group: '직무별' },
+  { label: '디자인', emoji: '🎨', group: '직무별' },
+  { label: '경영/기획', emoji: '📋', group: '직무별' },
+  { label: '법률/회계', emoji: '⚖️', group: '직무별' },
 ];
 
 const FEATURES = [
@@ -184,42 +205,67 @@ export default function Landing() {
       {/* ── 카테고리 ── */}
       <section style={{ padding: '56px 24px 40px', maxWidth: 1200, margin: '0 auto' }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>카테고리별 강의</h2>
-        <p style={{ color: 'var(--color-muted)', marginBottom: 24, fontSize: 15 }}>
-          원하는 면접 유형을 선택해 바로 강의를 찾아보세요.
+        <p style={{ color: 'var(--color-muted)', marginBottom: 32, fontSize: 15 }}>
+          면접 유형부터 직무별까지, 원하는 분야를 선택해 강의를 찾아보세요.
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {CATEGORIES.map(({ label, emoji }) => (
-            <Link
-              key={label}
-              to={`/courses?category=${encodeURIComponent(label)}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '12px 20px',
-                background: 'var(--color-surface)',
-                borderRadius: 24,
-                border: '1px solid var(--color-border)',
-                fontWeight: 600,
-                fontSize: 15,
-                textDecoration: 'none',
-                color: 'inherit',
-                transition: 'box-shadow 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-brand)';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-              }}
-            >
-              <span style={{ fontSize: 18 }}>{emoji}</span>
-              {label}
-            </Link>
-          ))}
-        </div>
+
+        {(['기술면접', '면접 유형', '직무별'] as const).map((group) => (
+          <div key={group} style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              {group === '기술면접' && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--color-brand)', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
+                  ① 기술 영역
+                </span>
+              )}
+              {group === '면접 유형' && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: '#6366f1', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
+                  ② 면접 방식
+                </span>
+              )}
+              {group === '직무별' && (
+                <span style={{ fontSize: 11, fontWeight: 700, background: '#0ea5e9', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
+                  ③ 직무별
+                </span>
+              )}
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-muted)', margin: 0, letterSpacing: 0.3 }}>
+                {group === '기술면접' ? '세부 기술 영역별 강의' : group === '면접 유형' ? '면접 방식별 강의' : '직무별 강의'}
+              </h3>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {CATEGORIES.filter((c) => c.group === group).map(({ label, emoji }) => (
+                <Link
+                  key={label}
+                  to={`/courses?category=${encodeURIComponent(label)}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '10px 18px',
+                    background: 'var(--color-surface)',
+                    borderRadius: 24,
+                    border: '1px solid var(--color-border)',
+                    fontWeight: 600,
+                    fontSize: 14,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'box-shadow 0.15s, border-color 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-brand)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
+                >
+                  <span style={{ fontSize: 16 }}>{emoji}</span>
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* ── 추천 강의 ── */}

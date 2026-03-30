@@ -34,7 +34,7 @@ export default function CourseList() {
 
   useEffect(() => {
     dispatch(fetchCourses());
-  }, [dispatch, filters.page, filters.size, filters.sort, filters.category, filters.difficulty]);
+  }, [dispatch, filters.page, filters.size, filters.sort, filters.category, filters.difficulty, filters.freeOnly, filters.min_price, filters.max_price]);
 
   const applyFilters = () => {
     dispatch(fetchCourses());
@@ -44,8 +44,18 @@ export default function CourseList() {
 
   const totalPages = Math.max(1, Math.ceil(total / size));
   const enrolledCourseIds = new Set((enrollments || []).map((e: any) => Number(e.course_id)));
+
+  // 2단계 직무/분야 클라이언트 필터링
+  const jobFiltered = filters.jobField
+    ? items.filter((c: any) => {
+        const cat: string = (c.category ?? '').toLowerCase();
+        const field: string = (filters.jobField as string).toLowerCase();
+        return cat.includes(field) || (c.title ?? '').toLowerCase().includes(field) || (c.description ?? '').toLowerCase().includes(field);
+      })
+    : items;
+
   // 로그인한 사용자는 이미 구매(수강/등록)한 강의를 목록에서 제외합니다.
-  const visibleItems = user ? items.filter((c: any) => !enrolledCourseIds.has(Number(c.id))) : items;
+  const visibleItems = user ? jobFiltered.filter((c: any) => !enrolledCourseIds.has(Number(c.id))) : jobFiltered;
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
