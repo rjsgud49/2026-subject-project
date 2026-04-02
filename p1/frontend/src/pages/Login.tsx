@@ -14,7 +14,8 @@ export default function Login() {
   const nav = useNavigate();
   const loc = useLocation() as any;
   const dispatch = useAppDispatch();
-  const from = loc.state?.from?.pathname || '/dashboard';
+  const rawFrom = loc.state?.from;
+  const from = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname || '/dashboard';
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

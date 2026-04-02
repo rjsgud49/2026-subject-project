@@ -10,6 +10,7 @@ export default function Cart() {
   const dispatch = useAppDispatch();
   const nav = useNavigate();
   const { items } = useAppSelector((s) => s.cart);
+  const user = useAppSelector((s) => s.user.user);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
@@ -49,6 +50,22 @@ export default function Cart() {
     dispatch(fetchEnrollments());
     nav('/checkout/complete');
   };
+
+  if (!user) {
+    return (
+      <div style={{ maxWidth: 480, margin: '80px auto', padding: '40px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🔒</div>
+        <h2 style={{ fontSize: 22, marginBottom: 12 }}>로그인이 필요합니다</h2>
+        <p style={{ color: 'var(--color-muted)', marginBottom: 28, lineHeight: 1.7 }}>
+          장바구니 및 수강신청 기능은<br />로그인 후 이용할 수 있습니다.
+        </p>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <Button variant="secondary" onClick={() => nav('/courses')}>강의 둘러보기</Button>
+          <Button onClick={() => nav('/login', { state: { from: '/cart' } })}>로그인하기</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>

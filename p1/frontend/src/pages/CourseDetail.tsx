@@ -18,6 +18,7 @@ export default function CourseDetail() {
   const dispatch = useAppDispatch();
   const [showCartModal, setShowCartModal] = useState(false);
   const { courseDetail, detailStatus, activeTab } = useAppSelector((s) => s.courses);
+  const user = useAppSelector((s) => s.user.user);
   const qa = useAppSelector((s) => s.qa.byCourse[Number(courseId)]);
 
   useEffect(() => {
@@ -35,7 +36,12 @@ export default function CourseDetail() {
     if (tab === 'qa') dispatch(setActiveTab('qa'));
   }, [search, dispatch]);
 
+  const requireLogin = () => {
+    nav('/login', { state: { from: `/courses/${courseId}` } });
+  };
+
   const addCart = async () => {
+    if (!user) { requireLogin(); return; }
     const r = await dispatch(addToCartThunk(Number(courseId)));
     if (!r.error) {
       dispatch(fetchCart());
@@ -44,6 +50,7 @@ export default function CourseDetail() {
   };
 
   const enroll = async () => {
+    if (!user) { requireLogin(); return; }
     const r = await dispatch(enrollThunk(Number(courseId)));
     if (r.error) {
       window.alert(r.error.message || '수강신청에 실패했습니다.');
@@ -116,12 +123,31 @@ export default function CourseDetail() {
             {c.estimated_hours != null && ` · 약 ${c.estimated_hours}시간`}
           </p>
           <p style={{ fontSize: 24, fontWeight: 800, margin: '16px 0' }}>{formatPrice(c.price)}</p>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Button variant="secondary" onClick={addCart}>
-              장바구니 담기
-            </Button>
-            <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '수강신청(간이 결제)'}</Button>
-          </div>
+          {user ? (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <Button variant="secondary" onClick={addCart}>
+                장바구니 담기
+              </Button>
+              <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '수강신청(간이 결제)'}</Button>
+            </div>
+          ) : (
+            <div>
+              <div
+                style={{
+                  marginBottom: 10,
+                  padding: '10px 14px',
+                  background: '#fef9c3',
+                  border: '1px solid #fde047',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: '#854d0e',
+                }}
+              >
+                🔒 수강신청은 로그인 후 이용할 수 있습니다.
+              </div>
+              <Button onClick={requireLogin}>로그인하고 수강신청하기</Button>
+            </div>
+          )}
         </div>
       </div>
 
