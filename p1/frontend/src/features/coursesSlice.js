@@ -21,7 +21,11 @@ export const fetchCourses = createAsyncThunk('courses/fetchList', async (_, { ge
     size: String(filters.size),
   };
   if (filters.q) p.q = filters.q;
-  if (filters.category) p.category = filters.category;
+  // 1단계: 면접 방식(filters.category) → API 파라미터 interviewType
+  if (filters.category) p.interviewType = filters.category;
+  // 2단계: 직무/분야(filters.jobField)  → API 파라미터 category
+  if (filters.jobField) p.category = filters.jobField;
+  // 두 파라미터 모두 서버에서 페이지네이션 전에 처리하므로 이중 필터링이 정상 동작
   if (filters.difficulty) p.difficulty = filters.difficulty;
   if (filters.freeOnly) {
     p.min_price = '0';

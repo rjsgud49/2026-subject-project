@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { logout } from '../features/userSlice';
@@ -13,7 +13,22 @@ export default function MainLayout() {
   const { tickets } = useFeedbackTickets();
   const totalTickets = tickets.doc + tickets.video + tickets.premium;
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const feedbackCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFeedback = pathname.startsWith('/feedback');
+
+  const handleFeedbackEnter = () => {
+    if (feedbackCloseTimer.current) {
+      clearTimeout(feedbackCloseTimer.current);
+      feedbackCloseTimer.current = null;
+    }
+    setFeedbackOpen(true);
+  };
+
+  const handleFeedbackLeave = () => {
+    feedbackCloseTimer.current = setTimeout(() => {
+      setFeedbackOpen(false);
+    }, 150);
+  };
 
   return (
     <>
@@ -60,8 +75,8 @@ export default function MainLayout() {
             {/* 피드백 드롭다운 */}
             <div
               style={{ position: 'relative' }}
-              onMouseEnter={() => setFeedbackOpen(true)}
-              onMouseLeave={() => setFeedbackOpen(false)}
+              onMouseEnter={handleFeedbackEnter}
+              onMouseLeave={handleFeedbackLeave}
             >
               <button
                 type="button"
