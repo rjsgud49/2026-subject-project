@@ -11,6 +11,9 @@ import {
   Req,
 } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
+import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
+import { CreateAnswerDto } from './dto/create-answer.dto';
 
 @Controller()
 export class QuestionsController {
@@ -38,7 +41,7 @@ export class QuestionsController {
   create(
     @Req() req: any,
     @Param('courseId', ParseIntPipe) courseId: number,
-    @Body() body: { title: string; body: string; is_private?: boolean },
+    @Body() body: CreateQuestionDto,
   ) {
     return this.questionsService.create(
       courseId,
@@ -56,7 +59,7 @@ export class QuestionsController {
   update(
     @Req() req: any,
     @Param('questionId', ParseIntPipe) questionId: number,
-    @Body() body: { title?: string; body?: string },
+    @Body() body: UpdateQuestionDto,
   ) {
     return this.questionsService.update(
       questionId,
@@ -77,7 +80,7 @@ export class QuestionsController {
   createAnswer(
     @Req() req: any,
     @Param('questionId', ParseIntPipe) questionId: number,
-    @Body() body: { body: string },
+    @Body() body: CreateAnswerDto,
   ) {
     return this.questionsService.createAnswer(
       questionId,

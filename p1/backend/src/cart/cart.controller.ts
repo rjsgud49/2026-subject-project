@@ -9,6 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
+import { AddCartDto } from './dto/add-cart.dto';
 
 @Controller('cart')
 export class CartController {
@@ -25,8 +26,8 @@ export class CartController {
   }
 
   @Post()
-  add(@Req() req: any, @Body('course_id', ParseIntPipe) courseId: number) {
-    return this.cartService.add(this.getUserId(req), courseId);
+  add(@Req() req: any, @Body() body: AddCartDto) {
+    return this.cartService.add(this.getUserId(req), body.course_id);
   }
 
   @Delete(':courseId')

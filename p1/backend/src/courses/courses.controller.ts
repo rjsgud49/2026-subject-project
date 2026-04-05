@@ -1,30 +1,23 @@
 import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { CoursesService } from './courses.service';
+import { CourseQueryDto } from './dto/course-query.dto';
 
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
   @Get()
-  findAll(
-    @Query('q') q?: string,
-    @Query('category') category?: string,
-    @Query('difficulty') difficulty?: string,
-    @Query('min_price') min_price?: string,
-    @Query('max_price') max_price?: string,
-    @Query('sort') sort?: string,
-    @Query('page') page?: string,
-    @Query('size') size?: string,
-  ) {
+  findAll(@Query() query: CourseQueryDto) {
     return this.coursesService.findAll({
-      q,
-      category,
-      difficulty,
-      min_price: min_price != null ? Number(min_price) : undefined,
-      max_price: max_price != null ? Number(max_price) : undefined,
-      sort,
-      page: page != null ? Number(page) : undefined,
-      size: size != null ? Number(size) : undefined,
+      q: query.q,
+      category: query.category,
+      interviewType: query.interviewType,
+      difficulty: query.difficulty,
+      min_price: query.min_price != null ? Number(query.min_price) : undefined,
+      max_price: query.max_price != null ? Number(query.max_price) : undefined,
+      sort: query.sort,
+      page: query.page != null ? Number(query.page) : undefined,
+      size: query.size != null ? Number(query.size) : undefined,
     });
   }
 

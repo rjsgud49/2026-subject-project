@@ -10,6 +10,7 @@ import { api } from '../services/api';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
   const loc = useLocation() as any;
@@ -17,16 +18,24 @@ export default function Login() {
   const rawFrom = loc.state?.from;
   const from = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname || '/dashboard';
 
+  const validate = (): boolean => {
+    const e: { email?: string; password?: string } = {};
+    if (!email.trim()) {
+      e.email = '이메일을 입력해 주세요.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      e.email = '유효한 이메일 형식을 입력해 주세요.';
+    }
+    if (!password) e.password = '비밀번호를 입력해 주세요.';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const payload = {
-      email: email.trim(),
-      password,
-    };
-    if (!payload.email || !payload.password) return;
+    if (!validate()) return;
     try {
       setLoading(true);
-      const user = await api.auth.login(payload as any);
+      const user = await api.auth.login({ email: email.trim(), password } as any);
       dispatch(setUser(user));
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
       nav(from, { replace: true });
@@ -98,18 +107,20 @@ export default function Login() {
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ ...fieldStyle, marginBottom: 16 }}
+            onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+            style={{ ...fieldStyle, marginBottom: errors.email ? 4 : 16, borderColor: errors.email ? '#ef4444' : undefined }}
             autoComplete="off"
           />
+          {errors.email && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 12 }}>{errors.email}</p>}
           <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>비밀번호</label>
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ ...fieldStyle, marginBottom: 28 }}
+            onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+            style={{ ...fieldStyle, marginBottom: errors.password ? 4 : 28, borderColor: errors.password ? '#ef4444' : undefined }}
             autoComplete="off"
           />
+          {errors.password && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 24 }}>{errors.password}</p>}
           <Button
             type="submit"
             size="lg"
