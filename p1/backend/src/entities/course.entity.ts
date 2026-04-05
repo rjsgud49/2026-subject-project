@@ -35,6 +35,9 @@ export class Course {
   @Column({ type: 'varchar', length: 50, nullable: true })
   category: string | null;
 
+  @Column({ name: 'interview_type', type: 'varchar', length: 50, nullable: true })
+  interviewType: string | null;
+
   @Column({ type: 'varchar', length: 20, nullable: true })
   difficulty: string | null;
 

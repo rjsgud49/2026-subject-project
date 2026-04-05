@@ -6,6 +6,7 @@ import { Course } from '../entities/course.entity';
 export interface CourseListQuery {
   q?: string;
   category?: string;
+  interviewType?: string;
   difficulty?: string;
   min_price?: number;
   max_price?: number;
@@ -36,6 +37,9 @@ export class CoursesService {
     }
     if (query.category) {
       qb.andWhere('c.category = :category', { category: query.category });
+    }
+    if (query.interviewType) {
+      qb.andWhere('c.interviewType = :interviewType', { interviewType: query.interviewType });
     }
     if (query.difficulty) {
       qb.andWhere('c.difficulty = :difficulty', { difficulty: query.difficulty });
@@ -71,11 +75,12 @@ export class CoursesService {
         id: c.id,
         title: c.title,
         instructor_name: c.instructor?.name ?? '',
-        category: c.category,
-        difficulty: c.difficulty,
-        price: Number(c.price),
-        thumbnail_url: c.thumbnailUrl,
-        created_at: c.createdAt,
+      category: c.category,
+      interview_type: c.interviewType,
+      difficulty: c.difficulty,
+      price: Number(c.price),
+      thumbnail_url: c.thumbnailUrl,
+      created_at: c.createdAt,
       })),
       total,
       page,
@@ -97,6 +102,7 @@ export class CoursesService {
       instructor_id: course.instructorId,
       instructor_name: course.instructor?.name ?? '',
       category: course.category,
+      interview_type: course.interviewType,
       difficulty: course.difficulty,
       price: Number(course.price),
       thumbnail_url: course.thumbnailUrl,
