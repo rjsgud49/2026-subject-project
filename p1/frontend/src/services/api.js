@@ -41,6 +41,20 @@ async function request(path, options = {}) {
   return data;
 }
 
+// FormData 전송 (파일 업로드용 - Content-Type 헤더 제외)
+async function requestFormData(path, formData) {
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { [USER_ID_HEADER]: String(getUserId()) },
+    body: formData,
+  });
+  if (res.status === 204) return undefined;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || res.statusText || String(res.status));
+  return data;
+}
+
 function qs(params) {
   if (!params) return '';
   const p = new URLSearchParams();
@@ -105,5 +119,33 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+  },
+  feedback: {
+    create: ({ planId, jobCategory, feedbackType, note, files }) => {
+      if (USE_MOCK) {
+        return Promise.resolve({
+          id: Date.now(),
+          planId, planName: { doc: '문서 피드백', video: '영상 피드백', premium: '심층 피드백' }[planId],
+          jobCategory, feedbackType, note,
+          fileNames: files.map((f) => f.name),
+          filePaths: [],
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        });
+      }
+      const fd = new FormData();
+      fd.append('planId', planId);
+      fd.append('jobCategory', jobCategory);
+      fd.append('feedbackType', feedbackType);
+      if (note) fd.append('note', note);
+      files.forEach((f) => fd.append('files', f));
+      return requestFormData('/feedback', fd);
+    },
+    list: () => USE_MOCK
+      ? Promise.resolve([])
+      : request('/feedback'),
+    get: (id) => USE_MOCK
+      ? Promise.resolve(null)
+      : request(`/feedback/${id}`),
   },
 };

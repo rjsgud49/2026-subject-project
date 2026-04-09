@@ -1,340 +1,305 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { formatPrice } from '../utils/format';
+import CourseThumbnail from '../components/CourseThumbnail';
+import {
+  Globe, Server, Code2, Database, Cloud, Smartphone, Shield, BookOpen,
+  Users, BarChart2, MessageCircle, Users2, Landmark, Megaphone,
+  Building2, Briefcase, HeartPulse, BrainCircuit,
+  Target, Wifi, Award, GraduationCap, type LucideIcon,
+} from 'lucide-react';
 
-const CATEGORIES = [
-  // 기술면접 세부 영역
-  { label: '웹/프론트엔드', emoji: '🌐', group: '기술면접' },
-  { label: '백엔드/서버', emoji: '⚙️', group: '기술면접' },
-  { label: '알고리즘/자료구조', emoji: '🧩', group: '기술면접' },
-  { label: '데이터베이스', emoji: '🗄️', group: '기술면접' },
-  { label: '시스템설계', emoji: '🏗️', group: '기술면접' },
-  { label: 'DevOps/클라우드', emoji: '☁️', group: '기술면접' },
-  { label: '데이터/AI', emoji: '🤖', group: '기술면접' },
-  { label: '모바일(Android/iOS)', emoji: '📱', group: '기술면접' },
-  { label: '보안/네트워크', emoji: '🔒', group: '기술면접' },
-  { label: 'CS기초', emoji: '📖', group: '기술면접' },
-  // 면접 유형
-  { label: '인성면접', emoji: '🤝', group: '면접 유형' },
-  { label: 'PT면접', emoji: '📊', group: '면접 유형' },
-  { label: '영어면접', emoji: '💬', group: '면접 유형' },
-  { label: '그룹면접', emoji: '👥', group: '면접 유형' },
-  // 직무별
-  { label: '금융/은행', emoji: '🏦', group: '직무별' },
-  { label: '마케팅/광고', emoji: '📣', group: '직무별' },
-  { label: '영업', emoji: '🤝', group: '직무별' },
-  { label: '의료/간호', emoji: '🏥', group: '직무별' },
-  { label: '공무원/공기업', emoji: '🏛️', group: '직무별' },
-  { label: '교육/강사', emoji: '📚', group: '직무별' },
-  { label: '디자인', emoji: '🎨', group: '직무별' },
-  { label: '경영/기획', emoji: '📋', group: '직무별' },
-  { label: '법률/회계', emoji: '⚖️', group: '직무별' },
+const CATEGORIES: { label: string; Icon: LucideIcon; group: string }[] = [
+  { label: '웹/프론트엔드',    Icon: Globe,          group: '기술면접' },
+  { label: '백엔드/서버',      Icon: Server,         group: '기술면접' },
+  { label: '알고리즘/자료구조', Icon: Code2,          group: '기술면접' },
+  { label: '데이터베이스',     Icon: Database,       group: '기술면접' },
+  { label: '시스템설계',       Icon: Cloud,          group: '기술면접' },
+  { label: 'DevOps/클라우드',  Icon: Cloud,          group: '기술면접' },
+  { label: '데이터/AI',        Icon: BrainCircuit,   group: '기술면접' },
+  { label: '모바일',           Icon: Smartphone,     group: '기술면접' },
+  { label: '보안/네트워크',    Icon: Shield,         group: '기술면접' },
+  { label: 'CS기초',           Icon: BookOpen,       group: '기술면접' },
+  { label: '인성면접',         Icon: Users,          group: '면접 유형' },
+  { label: 'PT면접',           Icon: BarChart2,      group: '면접 유형' },
+  { label: '영어면접',         Icon: MessageCircle,  group: '면접 유형' },
+  { label: '그룹면접',         Icon: Users2,         group: '면접 유형' },
+  { label: '금융/은행',        Icon: Landmark,       group: '직무별' },
+  { label: '마케팅/광고',      Icon: Megaphone,      group: '직무별' },
+  { label: '공무원/공기업',    Icon: Building2,      group: '직무별' },
+  { label: '경영/기획',        Icon: Briefcase,      group: '직무별' },
+  { label: '의료/간호',        Icon: HeartPulse,     group: '직무별' },
 ];
 
-const FEATURES = [
-  {
-    icon: '🎯',
-    title: '맞춤형 커리큘럼',
-    desc: '직무·레벨별로 설계된 강의로 꼭 필요한 내용만 효율적으로 학습하세요.',
-  },
-  {
-    icon: '📱',
-    title: '언제 어디서나 학습',
-    desc: 'PC·모바일 어디서든 끊김 없이 수강하고 진도를 이어갈 수 있습니다.',
-  },
-  {
-    icon: '🏆',
-    title: '현직자 강사진',
-    desc: '실제 면접 경험이 풍부한 현직 엔지니어·HR 전문가들이 직접 강의합니다.',
-  },
-  {
-    icon: '💬',
-    title: 'Q&A 질문 답변',
-    desc: '강의 내 Q&A로 궁금한 점을 즉시 해결하고 학습 효율을 높이세요.',
-  },
+const FEATURES: { Icon: LucideIcon; title: string; desc: string }[] = [
+  { Icon: Target,        title: '맞춤형 커리큘럼',  desc: '직무·레벨별로 설계된 강의로 꼭 필요한 내용만 효율적으로 학습하세요.' },
+  { Icon: Wifi,          title: '언제 어디서나',     desc: 'PC·모바일 어디서든 끊김 없이 수강하고 진도를 이어갈 수 있습니다.' },
+  { Icon: Award,         title: '현직자 강사진',     desc: '실제 면접 경험이 풍부한 현직 엔지니어·HR 전문가들이 강의합니다.' },
+  { Icon: MessageCircle, title: 'Q&A 질문 답변',     desc: '강의 내 Q&A로 궁금한 점을 즉시 해결하고 학습 효율을 높이세요.' },
 ];
 
 const REVIEWS = [
-  {
-    name: '김○○',
-    role: 'SW 개발자 취업 준비생',
-    rating: 5,
-    text: '기술 면접 강의 덕분에 자료구조·알고리즘 질문에 자신감이 생겼어요. 실전 예시가 풍부해서 바로 응용할 수 있었습니다.',
-    avatar: '👨‍💻',
-  },
-  {
-    name: '이○○',
-    role: '취업 준비 6개월 차',
-    rating: 5,
-    text: '인성 면접 파트가 특히 도움이 됐어요. 자기소개서 연계 답변 전략이 실제 면접에서 그대로 써먹었습니다!',
-    avatar: '👩‍🎓',
-  },
-  {
-    name: '박○○',
-    role: 'IT 스타트업 합격자',
-    rating: 4,
-    text: 'PT 면접 구성 방법을 체계적으로 배울 수 있었고, 강사님 피드백이 매우 구체적이었습니다. 추천합니다.',
-    avatar: '👨‍💼',
-  },
+  { name: '김○○', role: '카카오 합격',     rating: 5, text: '기술면접 준비를 1달 만에 끝냈어요. 강의 구성이 체계적이고 실전 질문 위주라 정말 도움이 됐습니다.' },
+  { name: '이○○', role: '삼성 SDS 합격',   rating: 5, text: 'CS 기초부터 시스템 설계까지 빠짐없이 커버됩니다. 덕분에 최종 합격했어요!' },
+  { name: '박○○', role: '네이버 합격',     rating: 5, text: '영어면접이 걱정이었는데 영어면접 강의 덕에 자신감을 얻었습니다. 강추!' },
+  { name: '최○○', role: '현대자동차 합격', rating: 5, text: '인성면접 준비를 어디서 해야 할지 몰랐는데 이 강의 하나로 해결했습니다.' },
 ];
 
 const STATS = [
-  { value: '1,200+', label: '누적 수강생' },
-  { value: '50+', label: '전문 강의' },
-  { value: '4.8', label: '평균 수강 평점' },
-  { value: '92%', label: '목표 달성률' },
+  { value: '309+', label: '전체 강의 수' },
+  { value: '12K+', label: '누적 수강생' },
+  { value: '4.8',  label: '평균 평점' },
+  { value: '95%',  label: '취업 성공률' },
 ];
 
+const GROUPS = ['기술면접', '면접 유형', '직무별'] as const;
+
 export default function Landing() {
-  const [featuredCourses, setFeaturedCourses] = useState<any[]>([]);
+  const [featured, setFeatured] = useState<any[]>([]);
 
   useEffect(() => {
-    api.courses
-      .list({ page: '1', size: '4', sort: 'popular' })
-      .then((res: any) => setFeaturedCourses(res?.items?.slice(0, 4) || []))
-      .catch(() =>
-        api.courses
-          .list({ page: '1', size: '4' })
-          .then((res: any) => setFeaturedCourses(res?.items?.slice(0, 4) || []))
-          .catch(() => {})
-      );
+    (api as any).courses.list({ page: 1, size: 8, sort: 'popular' })
+      .then((res: any) => setFeatured(res?.items ?? []))
+      .catch(() => {});
   }, []);
 
   return (
-    <>
+    <div style={{ background: 'var(--color-neutral-50)' }}>
+
       {/* ── Hero ── */}
       <section
         style={{
-          padding: '72px 24px 88px',
-          textAlign: 'center',
-          background: 'linear-gradient(160deg, #e8f9ed 0%, #f0f4ff 60%, var(--color-bg) 100%)',
-          position: 'relative',
-          overflow: 'hidden',
+          background: 'var(--color-neutral-0)',
+          borderBottom: '1px solid var(--color-neutral-200)',
+          padding: '80px 24px 72px',
         }}
       >
-        {/* 배경 장식 원 */}
-        <div
-          style={{
-            position: 'absolute',
-            top: -80,
-            right: -80,
-            width: 320,
-            height: 320,
-            borderRadius: '50%',
-            background: 'rgba(99,202,133,0.10)',
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -60,
-            left: -60,
-            width: 240,
-            height: 240,
-            borderRadius: '50%',
-            background: 'rgba(99,133,202,0.08)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ maxWidth: 680, margin: '0 auto', position: 'relative' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
           <span
             style={{
-              display: 'inline-block',
-              background: 'var(--color-brand)',
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 700,
-              padding: '4px 14px',
-              borderRadius: 20,
-              marginBottom: 20,
-              letterSpacing: 0.5,
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '4px 12px',
+              background: 'var(--color-primary-50)',
+              color: 'var(--color-primary-700)',
+              borderRadius: 'var(--radius-full)',
+              fontSize: 13, fontWeight: 600, marginBottom: 24,
             }}
           >
-            면접 합격의 첫걸음
+            <GraduationCap size={14} />
+            면접 준비의 새로운 기준
           </span>
-          <h1 style={{ fontSize: 'clamp(1.9rem, 5vw, 2.8rem)', fontWeight: 800, marginBottom: 20, lineHeight: 1.3 }}>
-            취업 면접,
-            <br />
-            <span style={{ color: 'var(--color-brand)' }}>체계적으로</span> 준비하세요
+          <h1
+            style={{
+              fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 800,
+              color: 'var(--color-neutral-900)', lineHeight: 1.2,
+              letterSpacing: '-0.03em', marginBottom: 20,
+            }}
+          >
+            취업 면접,<br />
+            <span style={{ color: 'var(--color-primary-500)' }}>전략적으로</span> 준비하세요
           </h1>
-          <p style={{ fontSize: 18, color: 'var(--color-muted)', marginBottom: 40, lineHeight: 1.7 }}>
-            기술·인성·PT 면접 강의를 검색하고,
-            <br />
-            수강신청 후 내 강의실에서 바로 학습하세요.
+          <p
+            style={{
+              fontSize: 18, color: 'var(--color-neutral-500)',
+              lineHeight: 1.7, maxWidth: 540, margin: '0 auto 36px',
+            }}
+          >
+            현직 전문가의 강의로 기술면접부터 인성면접까지,<br />
+            맞춤형 커리큘럼으로 빠르게 합격을 경험하세요.
           </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/courses" className="btn-cta-primary">
-              강의 둘러보기
-            </Link>
-            <Link to="/login" className="btn-cta-secondary">
-              무료로 시작하기
-            </Link>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/courses" className="btn-cta-primary">강의 둘러보기</Link>
+            <Link to="/signup" className="btn-cta-secondary">무료로 시작하기</Link>
           </div>
         </div>
       </section>
 
-      {/* ── 통계 배너 ── */}
-      <section
-        style={{
-          background: 'var(--color-brand)',
-          padding: '28px 24px',
-        }}
-      >
+      {/* ── Stats ── */}
+      <section style={{ background: 'var(--color-neutral-0)', borderBottom: '1px solid var(--color-neutral-200)' }}>
         <div
           style={{
-            maxWidth: 900,
-            margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: 16,
-            textAlign: 'center',
+            maxWidth: 'var(--max-w)', margin: '0 auto', padding: '0 24px',
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
           }}
         >
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)', marginTop: 4 }}>{s.label}</div>
+          {STATS.map((s, i) => (
+            <div
+              key={s.label}
+              style={{
+                padding: '28px 20px', textAlign: 'center',
+                borderLeft: i > 0 ? '1px solid var(--color-neutral-200)' : undefined,
+              }}
+            >
+              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-primary-600)', letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── 카테고리 ── */}
-      <section style={{ padding: '56px 24px 40px', maxWidth: 1200, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>카테고리별 강의</h2>
-        <p style={{ color: 'var(--color-muted)', marginBottom: 32, fontSize: 15 }}>
-          면접 유형부터 직무별까지, 원하는 분야를 선택해 강의를 찾아보세요.
-        </p>
-
-        {(['기술면접', '면접 유형', '직무별'] as const).map((group) => (
-          <div key={group} style={{ marginBottom: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              {group === '기술면접' && (
-                <span style={{ fontSize: 11, fontWeight: 700, background: 'var(--color-brand)', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
-                  ① 기술 영역
-                </span>
-              )}
-              {group === '면접 유형' && (
-                <span style={{ fontSize: 11, fontWeight: 700, background: '#6366f1', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
-                  ② 면접 방식
-                </span>
-              )}
-              {group === '직무별' && (
-                <span style={{ fontSize: 11, fontWeight: 700, background: '#0ea5e9', color: '#fff', padding: '2px 8px', borderRadius: 10 }}>
-                  ③ 직무별
-                </span>
-              )}
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-muted)', margin: 0, letterSpacing: 0.3 }}>
-                {group === '기술면접' ? '세부 기술 영역별 강의' : group === '면접 유형' ? '면접 방식별 강의' : '직무별 강의'}
-              </h3>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {CATEGORIES.filter((c) => c.group === group).map(({ label, emoji }) => (
-                <Link
-                  key={label}
-                  to={`/courses?category=${encodeURIComponent(label)}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    padding: '10px 18px',
-                    background: 'var(--color-surface)',
-                    borderRadius: 24,
-                    border: '1px solid var(--color-border)',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    transition: 'box-shadow 0.15s, border-color 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-brand)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 8px rgba(0,0,0,0.10)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--color-border)';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>{emoji}</span>
-                  {label}
-                </Link>
-              ))}
-            </div>
+      <section style={{ padding: '64px 24px' }}>
+        <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
+          <div style={{ marginBottom: 40 }}>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-neutral-900)', marginBottom: 8 }}>카테고리별 강의</h2>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>분야와 면접 유형에 맞는 강의를 골라보세요.</p>
           </div>
-        ))}
+
+          {GROUPS.map((group) => {
+            const items = CATEGORIES.filter((c) => c.group === group);
+            return (
+              <div key={group} style={{ marginBottom: 40 }}>
+                <h3 style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: 'var(--color-neutral-500)',
+                  textTransform: 'uppercase', letterSpacing: '0.08em',
+                  marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
+                }}>
+                  <span style={{ display: 'inline-block', width: 20, height: 2, background: 'var(--color-primary-500)', borderRadius: 2 }} />
+                  {group}
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {items.map((cat) => (
+                    <Link
+                      key={cat.label}
+                      to={`/courses?category=${encodeURIComponent(cat.label)}`}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '8px 16px',
+                        background: 'var(--color-neutral-0)',
+                        border: '1px solid var(--color-neutral-200)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 14, fontWeight: 500,
+                        color: 'var(--color-neutral-700)',
+                        textDecoration: 'none',
+                        transition: 'border-color 150ms, background 150ms, color 150ms',
+                        boxShadow: 'var(--shadow-xs)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--color-primary-300)';
+                        e.currentTarget.style.background = 'var(--color-primary-50)';
+                        e.currentTarget.style.color = 'var(--color-primary-700)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--color-neutral-200)';
+                        e.currentTarget.style.background = 'var(--color-neutral-0)';
+                        e.currentTarget.style.color = 'var(--color-neutral-700)';
+                      }}
+                    >
+                      <cat.Icon size={14} />
+                      {cat.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* ── 추천 강의 ── */}
-      {featuredCourses.length > 0 && (
-        <section style={{ padding: '48px 24px', maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>추천 강의</h2>
-              <p style={{ color: 'var(--color-muted)', fontSize: 15, margin: 0 }}>지금 가장 인기 있는 강의를 만나보세요.</p>
+      {featured.length > 0 && (
+        <section style={{ padding: '0 24px 64px', background: 'var(--color-neutral-50)' }}>
+          <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+              <div>
+                <h2 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 4px', color: 'var(--color-neutral-900)' }}>인기 강의</h2>
+                <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0 }}>수강생들이 많이 선택한 강의입니다.</p>
+              </div>
+              <Link
+                to="/courses"
+                style={{
+                  fontSize: 14, fontWeight: 500, color: 'var(--color-primary-600)',
+                  textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >
+                전체 보기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
             </div>
-            <Link
-              to="/courses"
-              style={{ color: 'var(--color-brand)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}
-            >
-              전체 강의 보기 →
-            </Link>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: 20,
-            }}
-          >
-            {featuredCourses.map((course: any) => (
-              <FeaturedCourseCard key={course.id} course={course} />
-            ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+              {featured.slice(0, 8).map((c: any) => (
+                <Link
+                  key={c.id}
+                  to={`/courses/${c.id}`}
+                  style={{
+                    display: 'flex', flexDirection: 'column',
+                    background: 'var(--color-neutral-0)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-neutral-200)',
+                    overflow: 'hidden', textDecoration: 'none',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'box-shadow 200ms, transform 200ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+                    <CourseThumbnail src={c.thumbnail_url} id={c.id} title={c.title} />
+                  </div>
+                  <div style={{ padding: '14px 16px' }}>
+                    {c.category && (
+                      <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-primary-700)', background: 'var(--color-primary-50)', padding: '2px 8px', borderRadius: 'var(--radius-full)', display: 'inline-block', marginBottom: 8 }}>
+                        {c.category}
+                      </span>
+                    )}
+                    <p style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 600, color: 'var(--color-neutral-800)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {c.title}
+                    </p>
+                    <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--color-neutral-500)' }}>{c.instructor_name}</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--color-neutral-900)' }}>
+                      {c.price === 0 || c.price === '0'
+                        ? <span style={{ color: 'var(--color-success-600)' }}>무료</span>
+                        : formatPrice(c.price)
+                      }
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* ── 플랫폼 특징 ── */}
-      <section
-        style={{
-          padding: '64px 24px',
-          background: 'var(--color-surface)',
-          borderTop: '1px solid var(--color-border)',
-          borderBottom: '1px solid var(--color-border)',
-        }}
-      >
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 44 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>왜 여기서 배울까요?</h2>
-            <p style={{ color: 'var(--color-muted)', fontSize: 15 }}>
-              합격을 앞당기는 4가지 이유
-            </p>
+      <section style={{ padding: '64px 24px', background: 'var(--color-neutral-0)', borderTop: '1px solid var(--color-neutral-200)' }}>
+        <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>왜 면접인강인가요?</h2>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>취업 준비에 꼭 필요한 것만 담았습니다.</p>
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: 24,
-            }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
             {FEATURES.map((f) => (
               <div
                 key={f.title}
                 style={{
-                  background: '#fff',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-lg)',
                   padding: '28px 24px',
-                  textAlign: 'center',
-                  boxShadow: 'var(--shadow)',
+                  background: 'var(--color-neutral-50)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-neutral-200)',
                 }}
               >
-                <div style={{ fontSize: 36, marginBottom: 14 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 10 }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--color-muted)', lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+                <div
+                  style={{
+                    width: 52, height: 52, borderRadius: 14,
+                    background: 'var(--color-primary-50)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginBottom: 16,
+                  }}
+                >
+                  <f.Icon size={24} color="var(--color-primary-600)" />
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px', color: 'var(--color-neutral-900)' }}>{f.title}</h3>
+                <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
               </div>
             ))}
           </div>
@@ -342,352 +307,96 @@ export default function Landing() {
       </section>
 
       {/* ── 수강 후기 ── */}
-      <section style={{ padding: '64px 24px', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 44 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>수강생 후기</h2>
-          <p style={{ color: 'var(--color-muted)', fontSize: 15 }}>
-            실제 수강생들이 직접 남긴 후기입니다.
-          </p>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: 24,
-          }}
-        >
-          {REVIEWS.map((r) => (
-            <div
-              key={r.name}
-              style={{
-                background: '#fff',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '28px 24px',
-                boxShadow: 'var(--shadow)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 14,
-              }}
-            >
-              {/* 별점 */}
-              <div style={{ display: 'flex', gap: 3 }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} style={{ color: i < r.rating ? '#f59e0b' : '#d1d5db', fontSize: 16 }}>
-                    ★
-                  </span>
-                ))}
-              </div>
-              {/* 후기 내용 */}
-              <p
+      <section style={{ padding: '64px 24px' }}>
+        <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>수강생 후기</h2>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>합격한 선배들의 이야기를 들어보세요.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
+            {REVIEWS.map((r) => (
+              <div
+                key={r.name}
                 style={{
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                  color: 'var(--color-text)',
-                  margin: 0,
-                  flex: 1,
+                  padding: '24px',
+                  background: 'var(--color-neutral-0)',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-neutral-200)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                "{r.text}"
-              </p>
-              {/* 작성자 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                  }}
-                >
-                  {r.avatar}
+                <div style={{ display: 'flex', gap: 2, marginBottom: 12 }}>
+                  {[...Array(r.rating)].map((_, i) => (
+                    <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#F59E0B" stroke="none">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  ))}
                 </div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{r.role}</div>
+                <p style={{ fontSize: 14, color: 'var(--color-neutral-700)', lineHeight: 1.7, margin: '0 0 16px' }}>
+                  "{r.text}"
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: 'var(--color-primary-100)',
+                    color: 'var(--color-primary-700)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, fontWeight: 700,
+                  }}>
+                    {r.name[0]}
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-800)' }}>{r.name}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--color-success-600)', fontWeight: 500 }}>{r.role}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── 하단 CTA 배너 ── */}
-      <section
-        style={{
-          padding: '64px 24px',
-          background: 'linear-gradient(135deg, #1a2b1e 0%, #1e3a5f 100%)',
-          textAlign: 'center',
-        }}
-      >
+      {/* ── CTA 배너 ── */}
+      <section style={{ padding: '64px 24px', background: 'var(--color-primary-600)', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 800, color: '#fff', marginBottom: 16 }}>
+          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>
             지금 바로 시작하세요
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, marginBottom: 36, lineHeight: 1.7 }}>
-            첫 강의는 무료로 체험할 수 있습니다.
-            <br />
-            오늘 시작해서 면접 합격에 한 걸음 더 가까워지세요.
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
+            가입 후 무료 강의를 먼저 경험해보세요.
           </p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link
               to="/signup"
               style={{
-                padding: '14px 32px',
-                background: 'var(--color-brand)',
-                color: '#fff',
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: 16,
-                textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '13px 28px', fontSize: 15, fontWeight: 700,
+                background: '#fff', color: 'var(--color-primary-600)',
+                borderRadius: 8, textDecoration: 'none',
+                boxShadow: 'var(--shadow-md)', transition: 'transform 150ms',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; }}
             >
-              무료 회원가입
+              무료로 시작하기
             </Link>
             <Link
               to="/courses"
               style={{
-                padding: '14px 32px',
-                background: 'rgba(255,255,255,0.12)',
-                color: '#fff',
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: 16,
-                textDecoration: 'none',
-                border: '1px solid rgba(255,255,255,0.25)',
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '13px 28px', fontSize: 15, fontWeight: 600,
+                background: 'rgba(255,255,255,0.15)', color: '#fff',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: 8, textDecoration: 'none', transition: 'background 150ms',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
             >
-              강의 먼저 보기
+              강의 목록 보기
             </Link>
           </div>
         </div>
       </section>
-    </>
-  );
-}
-
-function FeaturedCourseCard({ course }: { course: any }) {
-  const navigate = useNavigate();
-
-  const DIFFICULTY_LABEL: Record<string, string> = {
-    beginner: '입문',
-    intermediate: '중급',
-    advanced: '고급',
-  };
-  const DIFFICULTY_COLOR: Record<string, string> = {
-    beginner: '#16a34a',
-    intermediate: '#d97706',
-    advanced: '#dc2626',
-  };
-
-  return (
-    <div
-      className="flip-card"
-      style={{ height: 300 }}
-      onClick={() => navigate(`/courses/${course.id}`)}
-    >
-      <div className="flip-card-inner">
-
-        {/* 앞면 */}
-        <div
-          className="flip-card-front"
-          style={{
-            background: '#fff',
-            border: '1px solid var(--color-border)',
-            boxShadow: 'var(--shadow)',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div
-            style={{
-              height: 155,
-              background: 'linear-gradient(135deg, #e8f9ed, #dbeafe)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 40,
-              position: 'relative',
-              flexShrink: 0,
-            }}
-          >
-            {course.thumbnail_url ? (
-              <img
-                src={course.thumbnail_url}
-                alt={course.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            ) : (
-              '🎓'
-            )}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 10,
-                right: 12,
-                background: 'rgba(0,0,0,0.55)',
-                color: '#fff',
-                fontSize: 11,
-                padding: '3px 9px',
-                borderRadius: 20,
-                pointerEvents: 'none',
-              }}
-            >
-              마우스를 올려보세요 ↩
-            </div>
-          </div>
-          <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              {course.category && (
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: 'var(--color-brand)',
-                    background: 'var(--color-brand-soft)',
-                    padding: '2px 8px',
-                    borderRadius: 10,
-                  }}
-                >
-                  {course.category}
-                </span>
-              )}
-              <h3
-                style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  margin: '8px 0 4px',
-                  lineHeight: 1.45,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {course.title}
-              </h3>
-              {course.instructor_name && (
-                <p style={{ fontSize: 13, color: 'var(--color-muted)', margin: 0 }}>
-                  {course.instructor_name}
-                </p>
-              )}
-            </div>
-            <p style={{ margin: '8px 0 0', fontWeight: 800, fontSize: 15 }}>
-              {course.price === 0 ? '무료' : formatPrice(course.price)}
-            </p>
-          </div>
-        </div>
-
-        {/* 뒷면 */}
-        <div
-          className="flip-card-back"
-          style={{
-            background: 'linear-gradient(145deg, #0f1f2e 0%, #112318 100%)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: 'var(--shadow-md)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '20px 20px 18px',
-          }}
-        >
-          <div>
-            {course.category && (
-              <span
-                style={{
-                  display: 'inline-block',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'var(--color-brand)',
-                  background: 'rgba(0,199,60,0.15)',
-                  padding: '3px 10px',
-                  borderRadius: 20,
-                  marginBottom: 10,
-                }}
-              >
-                {course.category}
-              </span>
-            )}
-            <h3
-              style={{
-                fontSize: 15,
-                fontWeight: 700,
-                color: '#f3f4f6',
-                lineHeight: 1.45,
-                margin: '0 0 10px',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {course.title}
-            </h3>
-            {course.description && (
-              <p
-                style={{
-                  fontSize: 12,
-                  color: '#9ca3af',
-                  lineHeight: 1.65,
-                  margin: '0 0 14px',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {course.description}
-              </p>
-            )}
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {course.instructor_name && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14 }}>👤</span>
-                <span style={{ fontSize: 13, color: '#d1d5db' }}>{course.instructor_name}</span>
-              </div>
-            )}
-            {course.difficulty && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14 }}>📶</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: DIFFICULTY_COLOR[course.difficulty] ?? '#d1d5db' }}>
-                  {DIFFICULTY_LABEL[course.difficulty] ?? course.difficulty}
-                </span>
-              </div>
-            )}
-            {course.estimated_hours != null && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 14 }}>⏱️</span>
-                <span style={{ fontSize: 13, color: '#d1d5db' }}>약 {course.estimated_hours}시간</span>
-              </div>
-            )}
-          </div>
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <span style={{ fontSize: 17, fontWeight: 800, color: '#fff' }}>
-              {course.price === 0 ? '무료' : formatPrice(course.price)}
-            </span>
-            <div
-              style={{
-                padding: '8px 16px',
-                background: 'var(--color-brand)',
-                borderRadius: 8,
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 700,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              강의 보러 가기 →
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 
-const TICKET_KEY = 'p1_feedback_tickets';
+const TICKET_KEY     = 'p1_feedback_tickets';
+const HISTORY_KEY    = 'p1_feedback_purchase_history';
 const TICKETS_PER_PURCHASE = 3;
 
 export interface TicketState {
@@ -8,6 +9,26 @@ export interface TicketState {
   video: number;
   premium: number;
 }
+
+export interface PurchaseRecord {
+  id: string;
+  planId: keyof TicketState;
+  planName: string;
+  price: number;
+  count: number;
+  purchasedAt: string;
+}
+
+const PLAN_NAMES: Record<keyof TicketState, string> = {
+  doc:     '문서 피드백',
+  video:   '영상 피드백',
+  premium: '심층 피드백',
+};
+const PLAN_PRICES: Record<keyof TicketState, number> = {
+  doc:     39900,
+  video:   59900,
+  premium: 99900,
+};
 
 function loadTickets(): TicketState {
   try {
@@ -21,14 +42,44 @@ function saveTickets(t: TicketState) {
   localStorage.setItem(TICKET_KEY, JSON.stringify(t));
 }
 
-export function useFeedbackTickets() {
-  const [tickets, setTickets] = useState<TicketState>(loadTickets);
+function loadHistory(): PurchaseRecord[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [];
+}
 
-  /** 구매: planId에 3회 추가 */
+function saveHistory(h: PurchaseRecord[]) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+}
+
+export function useFeedbackTickets(isLoggedIn = true) {
+  const [tickets, setTickets] = useState<TicketState>(() =>
+    isLoggedIn ? loadTickets() : { doc: 0, video: 0, premium: 0 }
+  );
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseRecord[]>(() =>
+    isLoggedIn ? loadHistory() : []
+  );
+
+  /** 구매: planId에 3회 추가 + 구매 기록 저장 */
   const purchaseTickets = useCallback((planId: keyof TicketState) => {
     setTickets((prev) => {
       const next = { ...prev, [planId]: prev[planId] + TICKETS_PER_PURCHASE };
       saveTickets(next);
+      return next;
+    });
+    setPurchaseHistory((prev) => {
+      const record: PurchaseRecord = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        planId,
+        planName: PLAN_NAMES[planId],
+        price: PLAN_PRICES[planId],
+        count: TICKETS_PER_PURCHASE,
+        purchasedAt: new Date().toISOString(),
+      };
+      const next = [record, ...prev];
+      saveHistory(next);
       return next;
     });
   }, []);
@@ -44,8 +95,11 @@ export function useFeedbackTickets() {
   }, []);
 
   const refresh = useCallback(() => {
-    setTickets(loadTickets());
-  }, []);
+    if (isLoggedIn) {
+      setTickets(loadTickets());
+      setPurchaseHistory(loadHistory());
+    }
+  }, [isLoggedIn]);
 
-  return { tickets, purchaseTickets, useTicket, refresh, TICKETS_PER_PURCHASE };
+  return { tickets, purchaseHistory, purchaseTickets, useTicket, refresh, TICKETS_PER_PURCHASE };
 }

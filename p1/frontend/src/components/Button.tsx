@@ -1,15 +1,64 @@
 import type { CSSProperties, ButtonHTMLAttributes, ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type Size = 'sm' | 'md' | 'lg';
+type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 type Props = {
-  children: ReactNode;
+  children?: ReactNode;
   variant?: Variant;
   size?: Size;
   loading?: boolean;
   style?: CSSProperties;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
+
+const SIZE_STYLES: Record<Size, CSSProperties> = {
+  xs: { height: 28, padding: '0 10px', fontSize: 12, borderRadius: 6, gap: 4 },
+  sm: { height: 32, padding: '0 12px', fontSize: 14, borderRadius: 6, gap: 6 },
+  md: { height: 40, padding: '0 16px', fontSize: 14, borderRadius: 8, gap: 8 },
+  lg: { height: 48, padding: '0 24px', fontSize: 16, borderRadius: 8, gap: 8 },
+  xl: { height: 56, padding: '0 32px', fontSize: 16, borderRadius: 12, gap: 12 },
+};
+
+const VARIANT_STYLES: Record<Variant, CSSProperties> = {
+  primary: {
+    background: 'var(--color-primary-500)',
+    color: '#ffffff',
+    border: 'none',
+    boxShadow: 'var(--shadow-xs)',
+  },
+  secondary: {
+    background: 'var(--color-neutral-0)',
+    color: 'var(--color-neutral-700)',
+    border: '1px solid var(--color-neutral-200)',
+    boxShadow: 'var(--shadow-xs)',
+  },
+  ghost: {
+    background: 'transparent',
+    color: 'var(--color-neutral-600)',
+    border: 'none',
+    boxShadow: 'none',
+  },
+  danger: {
+    background: 'var(--color-error-600)',
+    color: '#ffffff',
+    border: 'none',
+    boxShadow: 'var(--shadow-xs)',
+  },
+};
+
+const VARIANT_HOVER: Record<Variant, Partial<CSSProperties>> = {
+  primary:   { background: 'var(--color-primary-600)' },
+  secondary: { background: 'var(--color-neutral-50)', borderColor: 'var(--color-neutral-300)' },
+  ghost:     { background: 'var(--color-neutral-100)' },
+  danger:    { background: 'var(--color-error-700)' },
+};
+
+const VARIANT_LEAVE: Record<Variant, Partial<CSSProperties>> = {
+  primary:   { background: 'var(--color-primary-500)' },
+  secondary: { background: 'var(--color-neutral-0)', borderColor: 'var(--color-neutral-200)' },
+  ghost:     { background: 'transparent' },
+  danger:    { background: 'var(--color-error-600)' },
+};
 
 export default function Button({
   children,
@@ -22,62 +71,75 @@ export default function Button({
   style: styleProp,
   ...rest
 }: Props) {
+  const isDisabled = disabled || loading;
+
   const base: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderRadius: 10,
-    fontWeight: 600,
-    cursor: disabled || loading ? 'not-allowed' : 'pointer',
-    opacity: disabled || loading ? 0.55 : 1,
-    border: 'none',
+    fontWeight: 500,
     fontFamily: 'inherit',
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    opacity: isDisabled ? 0.5 : 1,
     boxSizing: 'border-box',
-    transition: 'background 0.15s, box-shadow 0.15s, transform 0.1s',
-  };
-  const sizes: Record<Size, CSSProperties> = {
-    sm: { padding: '8px 14px', fontSize: 14 },
-    md: { padding: '12px 22px', fontSize: 15 },
-    lg: { padding: '14px 28px', fontSize: 16 },
-  };
-  const variants: Record<Variant, CSSProperties> = {
-    primary: {
-      background: 'var(--color-brand)',
-      color: '#fff',
-      boxShadow: '0 2px 8px rgba(0, 199, 60, 0.35)',
-    },
-    secondary: {
-      background: '#fff',
-      color: 'var(--color-text)',
-      border: '1px solid var(--color-border)',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-    },
-    ghost: { background: 'transparent', color: 'var(--color-muted)' },
-    danger: { background: 'var(--color-error)', color: '#fff' },
+    transition: `background ${150}ms ease, border-color ${150}ms ease, box-shadow ${150}ms ease, transform ${75}ms ease`,
+    userSelect: 'none',
+    whiteSpace: 'nowrap',
+    textDecoration: 'none',
   };
 
-  const merged = { ...base, ...sizes[size], ...variants[variant], ...styleProp };
+  const merged: CSSProperties = {
+    ...base,
+    ...SIZE_STYLES[size],
+    ...VARIANT_STYLES[variant],
+    ...styleProp,
+  };
+
+  const applyStyles = (el: HTMLButtonElement, styles: Partial<CSSProperties>) => {
+    Object.entries(styles).forEach(([k, v]) => {
+      (el.style as any)[k] = v;
+    });
+  };
 
   return (
     <button
       type={type}
-      disabled={disabled || loading}
+      disabled={isDisabled}
       className={className}
       style={merged}
       onMouseEnter={(e) => {
-        if (disabled || loading) return;
-        if (variant === 'primary') e.currentTarget.style.background = 'var(--color-brand-dark)';
-        if (variant === 'secondary') e.currentTarget.style.background = 'var(--color-bg)';
+        if (isDisabled) return;
+        applyStyles(e.currentTarget, VARIANT_HOVER[variant]);
       }}
       onMouseLeave={(e) => {
-        if (variant === 'primary') e.currentTarget.style.background = 'var(--color-brand)';
-        if (variant === 'secondary') e.currentTarget.style.background = '#fff';
+        applyStyles(e.currentTarget, VARIANT_LEAVE[variant]);
+        e.currentTarget.style.transform = '';
+      }}
+      onMouseDown={(e) => {
+        if (isDisabled) return;
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.transform = '';
       }}
       {...rest}
     >
-      {loading ? '…' : children}
+      {loading ? (
+        <>
+          <span
+            style={{
+              display: 'inline-block',
+              width: 14,
+              height: 14,
+              border: '2px solid currentColor',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.6s linear infinite',
+            }}
+          />
+          처리 중...
+        </>
+      ) : children}
     </button>
   );
 }
-

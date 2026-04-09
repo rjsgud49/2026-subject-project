@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CSSProperties, FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAppDispatch } from '../hooks/useRedux';
 import { setUser } from '../features/userSlice';
@@ -33,7 +33,7 @@ export default function Signup() {
     if (!email.trim()) {
       e.email = '이메일을 입력해 주세요.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      e.email = '유효한 이메일 형식을 입력해 주세요.';
+      e.email = '이메일 주소를 올바르게 입력해 주세요. (예: name@email.com)';
     }
     if (!password) {
       e.password = '비밀번호를 입력해 주세요.';
@@ -55,142 +55,105 @@ export default function Signup() {
       localStorage.setItem(SESSION_KEY, JSON.stringify(user));
       nav(from, { replace: true });
     } catch (err: any) {
-      window.alert(err?.message || '회원가입에 실패했습니다.');
+      window.alert(err?.message || '회원가입에 실패했습니다. 이미 사용 중인 이메일일 수 있습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fieldStyle: CSSProperties = {
-    width: '100%',
-    maxWidth: '100%',
-    padding: '14px 16px',
-    borderRadius: 10,
-    border: '1px solid var(--color-border)',
-    fontSize: 15,
-    boxSizing: 'border-box',
-    display: 'block',
-  };
+  const field = (
+    id: keyof FormErrors,
+    label: string,
+    type: string,
+    value: string,
+    onChange: (v: string) => void,
+    placeholder: string,
+    autoComplete?: string,
+  ) => (
+    <div>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-neutral-700)', marginBottom: 6 }}>
+        {label} <span style={{ color: 'var(--color-error-500)' }}>*</span>
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setErrors((p) => ({ ...p, [id]: undefined })); }}
+        className={`ui-input${errors[id] ? ' error' : ''}`}
+        placeholder={placeholder}
+        autoComplete={autoComplete ?? 'off'}
+      />
+      {errors[id] && (
+        <p role="alert" style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-error-600)' }}>
+          {errors[id]}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div
       style={{
-        minHeight: '70vh',
+        minHeight: 'calc(100dvh - var(--nav-h))',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'linear-gradient(180deg, var(--color-brand-soft) 0%, var(--color-bg) 50%)',
+        background: 'var(--color-neutral-50)',
       }}
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          padding: '40px 36px',
-          background: 'var(--color-surface)',
-          borderRadius: 16,
-          border: '1px solid var(--color-border)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
-        }}
-      >
+      <div style={{ width: '100%', maxWidth: 420 }}>
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 12,
-            background: 'var(--color-brand)',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-            fontWeight: 800,
-            marginBottom: 20,
+            background: 'var(--color-neutral-0)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--color-neutral-200)',
+            boxShadow: 'var(--shadow-lg)',
+            padding: '40px 36px',
           }}
         >
-          +
+          <div style={{ marginBottom: 28 }}>
+            <div
+              style={{
+                width: 44, height: 44,
+                borderRadius: 10,
+                background: 'var(--color-primary-500)',
+                color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 800,
+                marginBottom: 16,
+              }}
+            >
+              P1
+            </div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+              회원가입
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0 }}>
+              이메일로 계정을 만들고 학습을 시작하세요.
+            </p>
+          </div>
+
+          <form onSubmit={submit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {field('name',      '이름',        'text',     name,      setName,      '홍길동')}
+            {field('email',     '이메일',      'email',    email,     setEmail,     'name@email.com')}
+            {field('password',  '비밀번호',    'password', password,  setPassword,  '4자 이상', 'new-password')}
+            {field('password2', '비밀번호 확인', 'password', password2, setPassword2, '비밀번호 재입력')}
+
+            <Button type="submit" size="lg" loading={loading} style={{ width: '100%', marginTop: 4 }}>
+              가입하고 시작하기
+            </Button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 20, marginBottom: 0 }}>
+            이미 계정이 있나요?{' '}
+            <Link to="/login" style={{ color: 'var(--color-primary-600)', fontWeight: 600 }}>로그인</Link>
+          </p>
         </div>
-        <h1 style={{ fontSize: 24, marginBottom: 8, fontWeight: 800 }}>회원가입</h1>
-        <p style={{ fontSize: 14, color: 'var(--color-muted)', marginBottom: 28, lineHeight: 1.6 }}>
-          이메일로 계정을 생성합니다. (P1 간이 인증)
-        </p>
 
-        <form onSubmit={submit} style={{ width: '100%' }} autoComplete="off">
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>이름</label>
-          <input
-            value={name}
-            onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: undefined })); }}
-            placeholder="예) 홍길동"
-            style={{ ...fieldStyle, marginBottom: errors.name ? 4 : 18, borderColor: errors.name ? '#ef4444' : undefined }}
-            autoComplete="off"
-          />
-          {errors.name && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 14 }}>{errors.name}</p>}
-
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>이메일</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-            placeholder="예) student@p1.local"
-            style={{ ...fieldStyle, marginBottom: errors.email ? 4 : 16, borderColor: errors.email ? '#ef4444' : undefined }}
-            autoComplete="off"
-          />
-          {errors.email && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 12 }}>{errors.email}</p>}
-
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>비밀번호</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
-            placeholder="4자 이상"
-            style={{ ...fieldStyle, marginBottom: errors.password ? 4 : 12, borderColor: errors.password ? '#ef4444' : undefined }}
-            autoComplete="new-password"
-          />
-          {errors.password && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 8 }}>{errors.password}</p>}
-
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: 8, fontSize: 14 }}>비밀번호 확인</label>
-          <input
-            type="password"
-            value={password2}
-            onChange={(e) => { setPassword2(e.target.value); setErrors((p) => ({ ...p, password2: undefined })); }}
-            placeholder="비밀번호 재입력"
-            style={{ ...fieldStyle, marginBottom: errors.password2 ? 4 : 28, borderColor: errors.password2 ? '#ef4444' : undefined }}
-            autoComplete="off"
-          />
-          {errors.password2 && <p style={{ color: '#ef4444', fontSize: 12, marginBottom: 24 }}>{errors.password2}</p>}
-          <Button
-            type="submit"
-            size="lg"
-            disabled={loading}
-            loading={loading}
-            style={{
-              width: '100%',
-              maxWidth: '100%',
-              justifyContent: 'center',
-              padding: '16px 24px',
-              fontSize: 16,
-              fontWeight: 700,
-            }}
-          >
-            가입하고 시작하기
-          </Button>
-        </form>
-
-        <p style={{ marginTop: 18, textAlign: 'center', fontSize: 14, color: 'var(--color-muted)' }}>
-          이미 계정이 있나요?{' '}
-          <Link to="/login" style={{ color: 'var(--color-brand-dark)', fontWeight: 700 }}>
-            로그인
-          </Link>
-        </p>
-
-        <p style={{ marginTop: 18, textAlign: 'center', fontSize: 14 }}>
-          <Link to="/" style={{ color: 'var(--color-muted)', fontWeight: 500 }}>
-            ← 홈으로
-          </Link>
+        <p style={{ textAlign: 'center', marginTop: 20 }}>
+          <Link to="/" style={{ fontSize: 13, color: 'var(--color-neutral-500)' }}>← 홈으로 돌아가기</Link>
         </p>
       </div>
     </div>
   );
 }
-

@@ -2,15 +2,20 @@ import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useRedux';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
-import { useFeedbackSubmissions } from '../hooks/useFeedbackSubmissions';
 import type { TicketState } from '../hooks/useFeedbackTickets';
+import { api } from '../services/api';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
+import { FileText, Video, Award, Lock, Ticket, CheckCircle2, X, UploadCloud } from 'lucide-react';
 
-const PLAN_META: { id: keyof TicketState; name: string; icon: string; accent: string }[] = [
-  { id: 'doc',     name: '문서 피드백', icon: '📄', accent: '#3b82f6' },
-  { id: 'video',   name: '영상 피드백', icon: '🎬', accent: '#00c73c' },
-  { id: 'premium', name: '심층 피드백', icon: '🏅', accent: '#7c3aed' },
+const PLAN_ICONS: Record<string, React.ElementType> = {
+  doc: FileText, video: Video, premium: Award,
+};
+
+const PLAN_META: { id: keyof TicketState; name: string; accent: string }[] = [
+  { id: 'doc',     name: '문서 피드백', accent: '#2563EB' },
+  { id: 'video',   name: '영상 피드백', accent: '#16a34a' },
+  { id: 'premium', name: '심층 피드백', accent: '#7c3aed' },
 ];
 
 const JOB_CATEGORIES = [
@@ -23,8 +28,7 @@ const FEEDBACK_TYPES = ['자기소개서', '이력서', '포트폴리오', '면�
 export default function FeedbackNew() {
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.user.user);
-  const { tickets, useTicket } = useFeedbackTickets();
-  const { addSubmission } = useFeedbackSubmissions();
+  const { tickets, useTicket } = useFeedbackTickets(!!user);
 
   const [selectedPlan, setSelectedPlan] = useState<keyof TicketState | null>(null);
   const [jobCategory, setJobCategory] = useState('');
@@ -32,8 +36,10 @@ export default function FeedbackNew() {
   const [note, setNote] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDoneModal, setShowDoneModal] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalTickets = tickets.doc + tickets.video + tickets.premium;
@@ -42,23 +48,28 @@ export default function FeedbackNew() {
 
   if (!user) {
     return (
-      <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
-        <h2 style={{ marginBottom: 12 }}>로그인이 필요합니다</h2>
-        <Link to="/login"><Button>로그인하러 가기</Button></Link>
+      <div style={{ maxWidth: 420, margin: '80px auto', padding: '40px 32px', textAlign: 'center', background: 'var(--color-neutral-0)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-neutral-200)', boxShadow: 'var(--shadow-lg)' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-neutral-100)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <Lock size={28} color="var(--color-neutral-400)" />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>로그인이 필요합니다</h2>
+        <p style={{ color: 'var(--color-neutral-500)', marginBottom: 28, fontSize: 14 }}>피드백 신청은 로그인 후 이용하실 수 있습니다.</p>
+        <Link to="/login"><Button size="lg">로그인하러 가기</Button></Link>
       </div>
     );
   }
 
   if (totalTickets === 0) {
     return (
-      <div style={{ maxWidth: 520, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🎟️</div>
-        <h2 style={{ marginBottom: 12 }}>보유한 이용권이 없습니다</h2>
-        <p style={{ color: 'var(--color-muted)', marginBottom: 28 }}>
+      <div style={{ maxWidth: 420, margin: '80px auto', padding: '40px 32px', textAlign: 'center', background: 'var(--color-neutral-0)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-neutral-200)', boxShadow: 'var(--shadow-lg)' }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-warning-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <Ticket size={30} color="var(--color-warning-600)" />
+        </div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>보유한 이용권이 없습니다</h2>
+        <p style={{ color: 'var(--color-neutral-500)', marginBottom: 28, fontSize: 14 }}>
           피드백 신청 전 이용권을 먼저 구매해주세요.
         </p>
-        <Link to="/feedback/buy"><Button>이용권 구매하러 가기</Button></Link>
+        <Link to="/feedback/buy"><Button size="lg">이용권 구매하러 가기</Button></Link>
       </div>
     );
   }
@@ -80,20 +91,27 @@ export default function FeedbackNew() {
     setShowConfirmModal(true);
   };
 
-  const confirmSubmit = () => {
+  const confirmSubmit = async () => {
     if (!selectedPlan || !plan) return;
-    useTicket(selectedPlan);
-    addSubmission({
-      planId: selectedPlan,
-      planName: plan.name,
-      planIcon: plan.icon,
-      jobCategory,
-      feedbackType,
-      note,
-      fileNames: files.map((f) => f.name),
-    });
-    setShowConfirmModal(false);
-    setShowDoneModal(true);
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await (api as any).feedback.create({
+        planId: selectedPlan,
+        jobCategory,
+        feedbackType,
+        note,
+        files,
+      });
+      useTicket(selectedPlan);
+      setShowConfirmModal(false);
+      setShowDoneModal(true);
+    } catch (err: any) {
+      setSubmitError(err?.message || '피드백 신청에 실패했습니다. 다시 시도해 주세요.');
+      setShowConfirmModal(false);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -142,7 +160,9 @@ export default function FeedbackNew() {
                     onChange={() => setSelectedPlan(p.id)}
                     style={{ accentColor: p.accent }}
                   />
-                  <span style={{ fontSize: 24 }}>{p.icon}</span>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: `${p.accent}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {(() => { const Icon = PLAN_ICONS[p.id]; return <Icon size={18} color={p.accent} />; })()}
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
                   </div>
@@ -207,7 +227,9 @@ export default function FeedbackNew() {
               transition: 'all 0.15s',
             }}
           >
-            <div style={{ fontSize: 28, marginBottom: 8 }}>📁</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, color: dragging ? 'var(--color-primary-500)' : 'var(--color-neutral-400)' }}>
+              <UploadCloud size={36} strokeWidth={1.5} />
+            </div>
             <p style={{ margin: 0, fontWeight: 600 }}>파일을 드래그하거나 클릭해서 업로드</p>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-muted)' }}>
               영상(mp4, mov), 문서(pdf, docx, hwp) · 파일당 최대 500MB · 최대 5개
@@ -218,8 +240,8 @@ export default function FeedbackNew() {
             <ul style={{ listStyle: 'none', padding: 0, margin: '10px 0 0', display: 'flex', flexDirection: 'column', gap: 7 }}>
               {files.map((f, i) => (
                 <li key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', background: '#fff', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 14 }}>
-                  <span>📎 {f.name} <span style={{ color: 'var(--color-muted)', fontSize: 12 }}>({(f.size / 1024 / 1024).toFixed(1)} MB)</span></span>
-                  <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', fontSize: 16 }}>✕</button>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}><FileText size={14} color="var(--color-neutral-400)" /> {f.name} <span style={{ color: 'var(--color-neutral-400)', fontSize: 12 }}>({(f.size / 1024 / 1024).toFixed(1)} MB)</span></span>
+                  <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: 'var(--color-error-500)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
                 </li>
               ))}
             </ul>
@@ -253,11 +275,18 @@ export default function FeedbackNew() {
           </div>
         )}
 
+        {submitError && (
+          <div style={{ marginBottom: 12, padding: '10px 14px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 8, color: '#b91c1c', fontSize: 13 }}>
+            {submitError}
+          </div>
+        )}
         <Button
           type="submit"
+          disabled={submitting}
+          loading={submitting}
           style={{ width: '100%', justifyContent: 'center', padding: '15px 0', fontSize: 16, opacity: (selectedPlan && jobCategory && feedbackType) ? 1 : 0.45 }}
         >
-          피드백 신청하기
+          {submitting ? '신청 중...' : '피드백 신청하기'}
         </Button>
       </form>
 
@@ -295,7 +324,7 @@ export default function FeedbackNew() {
       <Modal
         open={showDoneModal}
         onClose={() => { setShowDoneModal(false); navigate('/feedback/history'); }}
-        title="피드백 신청 완료! 🎉"
+        title="피드백 신청 완료"
         footer={
           <div style={{ display: 'flex', gap: 8 }}>
             <Button variant="secondary" onClick={() => { setShowDoneModal(false); navigate('/feedback'); }}>
@@ -308,14 +337,16 @@ export default function FeedbackNew() {
         }
       >
         <div style={{ textAlign: 'center', padding: '8px 0' }}>
-          <div style={{ fontSize: 48, marginBottom: 14 }}>✅</div>
-          <p style={{ margin: '0 0 16px', lineHeight: 1.75 }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-success-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <CheckCircle2 size={36} color="var(--color-success-600)" />
+          </div>
+          <p style={{ margin: '0 0 16px', lineHeight: 1.75, fontSize: 15 }}>
             피드백 신청이 완료되었습니다.
             <br />전문가 검토 후 답변을 보내드립니다.
           </p>
           {plan && selectedPlan && (
-            <div style={{ padding: '12px 16px', background: '#f0fdf4', border: '1px solid var(--color-brand)', borderRadius: 10, fontSize: 14 }}>
-              <div style={{ color: 'var(--color-brand)', fontWeight: 700 }}>
+            <div style={{ padding: '14px 18px', background: 'var(--color-success-50)', border: '1px solid var(--color-success-200)', borderRadius: 'var(--radius-lg)', fontSize: 14 }}>
+              <div style={{ color: 'var(--color-success-700)', fontWeight: 700 }}>
                 {plan.name} 잔여 이용권: {tickets[selectedPlan]}회
               </div>
             </div>

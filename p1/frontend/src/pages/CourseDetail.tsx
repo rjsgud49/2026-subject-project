@@ -62,8 +62,25 @@ export default function CourseDetail() {
 
   if (detailStatus === 'loading' || !courseDetail) {
     return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        {detailStatus === 'failed' ? '강의를 찾을 수 없습니다.' : '불러오는 중…'}
+      <div style={{ maxWidth: 1024, margin: '0 auto', padding: '40px 24px' }}>
+        {detailStatus === 'failed' ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-neutral-500)' }}>
+            강의를 찾을 수 없습니다.
+          </div>
+        ) : (
+          <div>
+            <div className="skeleton" style={{ height: 20, width: 200, marginBottom: 24, borderRadius: 6 }} />
+            <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 36, padding: 28, background: 'var(--color-neutral-0)', borderRadius: 12, border: '1px solid var(--color-neutral-200)' }}>
+              <div className="skeleton" style={{ width: 320, aspectRatio: '16/9', borderRadius: 10 }} />
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div className="skeleton" style={{ height: 14, width: 80, marginBottom: 12, borderRadius: 4 }} />
+                <div className="skeleton" style={{ height: 28, width: '90%', marginBottom: 10, borderRadius: 6 }} />
+                <div className="skeleton" style={{ height: 14, width: 160, marginBottom: 16, borderRadius: 4 }} />
+                <div className="skeleton" style={{ height: 32, width: 100, borderRadius: 6 }} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -76,73 +93,74 @@ export default function CourseDetail() {
   ];
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
-      <p style={{ marginBottom: 16 }}>
-        <Link to="/courses">← 강의 목록</Link>
-      </p>
+    <div style={{ maxWidth: 1024, margin: '0 auto', padding: '40px 24px' }}>
+      {/* 브레드크럼 */}
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+        <Link to="/courses" style={{ color: 'var(--color-neutral-600)' }}>강의</Link>
+        <span style={{ color: 'var(--color-neutral-400)', fontSize: 12 }}>›</span>
+        <span style={{ color: 'var(--color-neutral-500)' }} aria-current="page">{c.title}</span>
+      </div>
+
+      {/* 강의 요약 카드 */}
       <div
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 32,
-          marginBottom: 32,
-          padding: 28,
-          background: 'var(--color-surface)',
+          gap: 28,
+          marginBottom: 36,
+          padding: '28px',
+          background: 'var(--color-neutral-0)',
           borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--color-border)',
+          border: '1px solid var(--color-neutral-200)',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
+        {/* 썸네일 */}
         <div
           style={{
-            width: 360,
-            maxWidth: '100%',
-            aspectRatio: '16/9',
-            background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
-            borderRadius: 12,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 64,
+            width: 320, maxWidth: '100%', aspectRatio: '16/9',
+            background: 'linear-gradient(135deg, var(--color-primary-50), var(--color-primary-100))',
+            borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 56, flexShrink: 0, overflow: 'hidden',
           }}
         >
-          {c.thumbnail_url ? (
-            <img
-              src={c.thumbnail_url}
-              alt=""
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
-            />
-          ) : (
-            '📚'
-          )}
+          {c.thumbnail_url
+            ? <img src={c.thumbnail_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }} />
+            : '📚'
+          }
         </div>
-        <div style={{ flex: 1, minWidth: 280 }}>
-          <span style={{ color: 'var(--color-accent)', fontWeight: 600, fontSize: 14 }}>{c.category}</span>
-          <h1 style={{ fontSize: 26, margin: '12px 0' }}>{c.title}</h1>
-          <p style={{ color: 'var(--color-muted)' }}>
-            {c.instructor_name} · {c.difficulty}
+
+        {/* 정보 */}
+        <div style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {c.category && (
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-primary-700)', background: 'var(--color-primary-50)', padding: '3px 10px', borderRadius: 'var(--radius-full)' }}>
+                {c.category}
+              </span>
+            )}
+            {c.difficulty && (
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-neutral-600)', background: 'var(--color-neutral-100)', padding: '3px 10px', borderRadius: 'var(--radius-full)' }}>
+                {c.difficulty === 'beginner' ? '입문' : c.difficulty === 'intermediate' ? '중급' : '고급'}
+              </span>
+            )}
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, color: 'var(--color-neutral-900)', lineHeight: 1.3 }}>{c.title}</h1>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-500)' }}>
+            {c.instructor_name}
             {c.estimated_hours != null && ` · 약 ${c.estimated_hours}시간`}
           </p>
-          <p style={{ fontSize: 24, fontWeight: 800, margin: '16px 0' }}>{formatPrice(c.price)}</p>
+          <p style={{ fontSize: 26, fontWeight: 800, margin: '8px 0 0', color: 'var(--color-neutral-900)' }}>
+            {Number(c.price) === 0 ? <span style={{ color: 'var(--color-success-600)' }}>무료</span> : formatPrice(c.price)}
+          </p>
+
           {user ? (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <Button variant="secondary" onClick={addCart}>
-                장바구니 담기
-              </Button>
-              <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '수강신청(간이 결제)'}</Button>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+              <Button variant="secondary" onClick={addCart}>장바구니 담기</Button>
+              <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '수강신청하기'}</Button>
             </div>
           ) : (
-            <div>
-              <div
-                style={{
-                  marginBottom: 10,
-                  padding: '10px 14px',
-                  background: '#fef9c3',
-                  border: '1px solid #fde047',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  color: '#854d0e',
-                }}
-              >
+            <div style={{ marginTop: 4 }}>
+              <div style={{ marginBottom: 10, padding: '10px 14px', background: 'var(--color-warning-50)', border: '1px solid var(--color-warning-100)', borderRadius: 8, fontSize: 13, color: 'var(--color-warning-700)' }}>
                 🔒 수강신청은 로그인 후 이용할 수 있습니다.
               </div>
               <Button onClick={requireLogin}>로그인하고 수강신청하기</Button>
@@ -151,14 +169,19 @@ export default function CourseDetail() {
         </div>
       </div>
 
+      {/* 탭 */}
       <Tabs tabs={tabs} active={activeTab} onChange={(id: any) => dispatch(setActiveTab(id))} />
 
       {activeTab === 'intro' && (
-        <div style={{ maxWidth: 800 }}>
-          <h2 style={{ fontSize: 18, marginBottom: 12 }}>강의 소개</h2>
-          <p style={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{c.description || '상세 설명이 준비 중입니다.'}</p>
-          <h2 style={{ fontSize: 18, margin: '32px 0 12px' }}>강사 소개</h2>
-          <p style={{ color: 'var(--color-muted)' }}>{c.instructor_bio || `${c.instructor_name} 강사님의 강의입니다.`}</p>
+        <div style={{ maxWidth: 720 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 12px', color: 'var(--color-neutral-900)' }}>강의 소개</h2>
+          <p style={{ lineHeight: 1.8, color: 'var(--color-neutral-700)', whiteSpace: 'pre-wrap', fontSize: 15 }}>
+            {c.description || '상세 설명이 준비 중입니다.'}
+          </p>
+          <h2 style={{ fontSize: 18, fontWeight: 700, margin: '32px 0 12px', color: 'var(--color-neutral-900)' }}>강사 소개</h2>
+          <p style={{ color: 'var(--color-neutral-500)', fontSize: 14, lineHeight: 1.7 }}>
+            {c.instructor_bio || `${c.instructor_name} 강사님의 강의입니다.`}
+          </p>
         </div>
       )}
 
@@ -167,51 +190,50 @@ export default function CourseDetail() {
       <Modal
         open={showCartModal}
         onClose={() => setShowCartModal(false)}
+        title="장바구니에 담겼습니다"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowCartModal(false)}>
-              계속 쇼핑
-            </Button>
-            <Button
-              onClick={() => {
-                setShowCartModal(false);
-                nav('/cart');
-              }}
-            >
-              장바구니로 이동
-            </Button>
+            <Button variant="secondary" onClick={() => setShowCartModal(false)}>계속 둘러보기</Button>
+            <Button onClick={() => { setShowCartModal(false); nav('/cart'); }}>장바구니로 이동</Button>
           </>
         }
       >
-        장바구니에 담겼습니다. 장바구니로 이동하시겠습니까?
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-600)' }}>장바구니로 이동하시겠습니까?</p>
       </Modal>
 
       {activeTab === 'qa' && (
         <div>
-          <Link to={`/courses/${courseId}/questions/new`}>
-            <Button style={{ marginBottom: 20 }}>질문하기</Button>
-          </Link>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <Link to={`/courses/${courseId}/questions/new`}>
+              <Button>질문하기</Button>
+            </Link>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {(qa?.items || []).map((q: any) => (
-              <li
+              <div
                 key={q.id}
                 style={{
-                  padding: 16,
-                  border: '1px solid var(--color-border)',
+                  padding: '14px 16px',
+                  background: 'var(--color-neutral-0)',
+                  border: '1px solid var(--color-neutral-200)',
                   borderRadius: 8,
-                  marginBottom: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
                 }}
               >
-                <Link to={`/questions/${q.id}`} style={{ fontWeight: 600 }}>
+                <Link to={`/questions/${q.id}`} style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-neutral-800)', flex: 1 }}>
                   {q.title}
                 </Link>
-                <span style={{ marginLeft: 12, fontSize: 14, color: 'var(--color-muted)' }}>
+                <span style={{ fontSize: 12, color: 'var(--color-neutral-500)', flexShrink: 0 }}>
                   {q.user_name} · 답변 {q.answer_count}
                 </span>
-              </li>
+              </div>
             ))}
-          </ul>
-          {(!qa?.items || qa.items.length === 0) && <p style={{ color: 'var(--color-muted)' }}>아직 질문이 없습니다.</p>}
+          </div>
+          {(!qa?.items || qa.items.length === 0) && (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-neutral-500)', fontSize: 14 }}>
+              아직 질문이 없어요. 첫 질문을 남겨보세요!
+            </div>
+          )}
         </div>
       )}
     </div>

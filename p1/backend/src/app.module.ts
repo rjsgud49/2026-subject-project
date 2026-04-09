@@ -7,6 +7,7 @@ import { CartModule } from './cart/cart.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { QuestionsModule } from './questions/questions.module';
 import { AuthModule } from './auth/auth.module';
+import { FeedbackModule } from './feedback/feedback.module';
 import {
   User,
   Course,
@@ -17,6 +18,7 @@ import {
   CartItem,
   Question,
   Answer,
+  FeedbackSubmission,
 } from './entities';
 
 @Module({
@@ -38,6 +40,7 @@ import {
         CartItem,
         Question,
         Answer,
+        FeedbackSubmission,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
@@ -49,6 +52,7 @@ import {
     EnrollmentsModule,
     QuestionsModule,
     AuthModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
   providers: [AppService],

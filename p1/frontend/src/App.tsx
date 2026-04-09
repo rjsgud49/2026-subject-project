@@ -17,6 +17,7 @@ import FeedbackMain from './pages/FeedbackMain';
 import FeedbackBuy from './pages/FeedbackBuy';
 import FeedbackNew from './pages/FeedbackNew';
 import FeedbackHistory from './pages/FeedbackHistory';
+import InstructorProfile from './pages/InstructorProfile';
 
 export default function App() {
   return (
@@ -53,6 +54,7 @@ export default function App() {
           }
         />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/instructors/:name" element={<InstructorProfile />} />
         <Route path="/feedback" element={<FeedbackMain />} />
         <Route path="/feedback/buy" element={<FeedbackBuy />} />
         <Route path="/feedback/new" element={<FeedbackNew />} />

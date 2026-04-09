@@ -4,75 +4,135 @@ import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { logout } from '../features/userSlice';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
+import {
+  BookOpen,
+  LayoutDashboard,
+  ShoppingCart,
+  MessageSquare,
+  ChevronDown,
+  LogOut,
+  LogIn,
+  UserPlus,
+  Ticket,
+} from 'lucide-react';
+
+const NAV_LINKS = [
+  { to: '/courses',   label: '강의',     Icon: BookOpen },
+  { to: '/dashboard', label: '내 강의실', Icon: LayoutDashboard },
+  { to: '/cart',      label: '장바구니',  Icon: ShoppingCart },
+];
+
+const FEEDBACK_ITEMS = [
+  { to: '/feedback',         label: '피드백 홈' },
+  { to: '/feedback/buy',     label: '이용권 구매' },
+  { to: '/feedback/new',     label: '피드백 신청' },
+  { to: '/feedback/history', label: '신청 내역' },
+];
 
 export default function MainLayout() {
   const user = useAppSelector((s) => s.user.user);
   const dispatch = useAppDispatch();
   const nav = useNavigate();
   const { pathname } = useLocation();
-  const { tickets } = useFeedbackTickets();
-  const totalTickets = tickets.doc + tickets.video + tickets.premium;
+  const { tickets } = useFeedbackTickets(!!user);
+  const totalTickets = user ? (tickets.doc + tickets.video + tickets.premium) : 0;
+
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const feedbackCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isFeedback = pathname.startsWith('/feedback');
+  const isActive = (to: string) => pathname === to;
 
   const handleFeedbackEnter = () => {
-    if (feedbackCloseTimer.current) {
-      clearTimeout(feedbackCloseTimer.current);
-      feedbackCloseTimer.current = null;
-    }
+    if (feedbackTimer.current) { clearTimeout(feedbackTimer.current); feedbackTimer.current = null; }
     setFeedbackOpen(true);
   };
-
   const handleFeedbackLeave = () => {
-    feedbackCloseTimer.current = setTimeout(() => {
-      setFeedbackOpen(false);
-    }, 150);
+    feedbackTimer.current = setTimeout(() => setFeedbackOpen(false), 150);
   };
 
   return (
     <>
+      {/* ── Header ── */}
       <header
         style={{
           position: 'sticky',
           top: 0,
-          zIndex: 50,
-          background: 'var(--color-surface)',
-          borderBottom: '1px solid var(--color-border)',
-          height: 64,
+          zIndex: 10,
+          height: 'var(--nav-h)',
+          background: 'var(--color-neutral-0)',
+          borderBottom: '1px solid var(--color-neutral-200)',
           display: 'flex',
           alignItems: 'center',
         }}
       >
         <div
           style={{
-            maxWidth: 1200,
+            maxWidth: 'var(--max-w)',
             margin: '0 auto',
             padding: '0 24px',
             width: '100%',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 24,
+            gap: 8,
           }}
         >
-          <Link to="/" style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-text)', textDecoration: 'none' }}>
-            면접<span style={{ color: 'var(--color-accent)' }}>인강</span>
+          {/* Logo */}
+          <Link
+            to="/"
+            style={{
+              fontSize: 18, fontWeight: 800,
+              color: 'var(--color-neutral-900)',
+              textDecoration: 'none',
+              marginRight: 8,
+              letterSpacing: '-0.02em',
+              flexShrink: 0,
+            }}
+          >
+            면접<span style={{ color: 'var(--color-primary-500)' }}>인강</span>
           </Link>
-          <nav style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Link to="/courses" style={{ padding: '8px 14px', color: 'inherit', fontWeight: pathname === '/courses' ? 700 : 400 }}>
-              강의
-            </Link>
-            <Link to="/dashboard" style={{ padding: '8px 14px', color: 'inherit', fontWeight: pathname === '/dashboard' ? 700 : 400 }}>
-              내 강의실
-            </Link>
-            <Link to="/cart" style={{ padding: '8px 14px', color: 'inherit', fontWeight: pathname === '/cart' ? 700 : 400 }}>
-              장바구니
-            </Link>
+
+          {/* Main nav */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+            {NAV_LINKS.map(({ to, label, Icon }) => {
+              const active = isActive(to);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 10px', fontSize: 14,
+                    fontWeight: active ? 600 : 400,
+                    color: active ? 'var(--color-primary-600)' : 'var(--color-neutral-600)',
+                    textDecoration: 'none', borderRadius: 6,
+                    background: active ? 'var(--color-primary-50)' : 'transparent',
+                    transition: 'background 150ms, color 150ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'var(--color-neutral-100)';
+                      e.currentTarget.style.color = 'var(--color-neutral-700)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-neutral-600)';
+                    }
+                  }}
+                >
+                  <Icon size={15} />
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {/* 피드백 드롭다운 */}
+          {/* Right side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+
+            {/* Feedback dropdown */}
             <div
               style={{ position: 'relative' }}
               onMouseEnter={handleFeedbackEnter}
@@ -81,63 +141,73 @@ export default function MainLayout() {
               <button
                 type="button"
                 style={{
-                  padding: '6px 14px',
-                  color: isFeedback ? '#fff' : 'var(--color-brand-dark)',
-                  fontWeight: 700,
-                  border: '1.5px solid var(--color-brand)',
-                  borderRadius: 20,
-                  fontSize: 14,
-                  background: isFeedback ? 'var(--color-brand)' : 'var(--color-brand-soft)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  height: 32, padding: '0 10px', fontSize: 14,
+                  fontWeight: isFeedback ? 600 : 500,
+                  color: isFeedback ? 'var(--color-primary-700)' : 'var(--color-neutral-600)',
+                  background: isFeedback ? 'var(--color-primary-50)' : 'transparent',
+                  border: isFeedback ? '1px solid var(--color-primary-200)' : '1px solid var(--color-neutral-200)',
+                  borderRadius: 8, cursor: 'pointer',
+                  transition: 'background 150ms, border-color 150ms, color 150ms',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isFeedback) {
+                    e.currentTarget.style.background = 'var(--color-neutral-50)';
+                    e.currentTarget.style.borderColor = 'var(--color-neutral-300)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isFeedback) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'var(--color-neutral-200)';
+                  }
                 }}
               >
-                🎓 피드백
-                {totalTickets > 0 && (
-                  <span style={{ background: isFeedback ? 'rgba(255,255,255,0.3)' : 'var(--color-brand)', color: '#fff', borderRadius: 10, padding: '0 6px', fontSize: 11, fontWeight: 800 }}>
+                <MessageSquare size={14} />
+                피드백
+                {user && totalTickets > 0 && (
+                  <span
+                    style={{
+                      background: 'var(--color-primary-500)',
+                      color: '#fff', borderRadius: 'var(--radius-full)',
+                      padding: '0 6px', fontSize: 11, fontWeight: 700,
+                      lineHeight: '18px', height: 18,
+                      display: 'inline-flex', alignItems: 'center',
+                    }}
+                  >
                     {totalTickets}
                   </span>
                 )}
-                <span style={{ fontSize: 10, opacity: 0.7 }}>▼</span>
+                <ChevronDown size={12} />
               </button>
+
               {feedbackOpen && (
                 <div
                   style={{
-                    position: 'absolute',
-                    top: '100%',
-                    right: 0,
-                    marginTop: 4,
-                    background: '#fff',
-                    border: '1px solid var(--color-border)',
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    background: 'var(--color-neutral-0)',
+                    border: '1px solid var(--color-neutral-200)',
                     borderRadius: 'var(--radius-lg)',
-                    boxShadow: 'var(--shadow-md)',
-                    minWidth: 170,
-                    zIndex: 100,
-                    overflow: 'hidden',
+                    boxShadow: 'var(--shadow-lg)',
+                    minWidth: 160, zIndex: 20, overflow: 'hidden', padding: '4px 0',
                   }}
                 >
-                  {[
-                    { to: '/feedback',         label: '🏠 피드백 홈' },
-                    { to: '/feedback/buy',     label: '🎟️ 이용권 구매' },
-                    { to: '/feedback/new',     label: '📤 피드백 신청' },
-                    { to: '/feedback/history', label: '📂 신청 내역' },
-                  ].map((item, i, arr) => (
+                  {FEEDBACK_ITEMS.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
                       onClick={() => setFeedbackOpen(false)}
                       style={{
-                        display: 'block',
-                        padding: '11px 16px',
-                        fontSize: 14,
-                        color: 'inherit',
+                        display: 'block', padding: '9px 14px', fontSize: 14,
+                        fontWeight: pathname === item.to ? 600 : 400,
+                        color: pathname === item.to ? 'var(--color-primary-700)' : 'var(--color-neutral-700)',
                         textDecoration: 'none',
-                        borderBottom: i < arr.length - 1 ? '1px solid var(--color-border)' : undefined,
-                        background: pathname === item.to ? 'var(--color-brand-soft)' : '#fff',
-                        fontWeight: pathname === item.to ? 700 : 400,
+                        background: pathname === item.to ? 'var(--color-primary-50)' : 'transparent',
+                        transition: 'background 100ms',
                       }}
+                      onMouseEnter={(e) => { if (pathname !== item.to) e.currentTarget.style.background = 'var(--color-neutral-50)'; }}
+                      onMouseLeave={(e) => { if (pathname !== item.to) e.currentTarget.style.background = 'transparent'; }}
                     >
                       {item.label}
                     </Link>
@@ -146,50 +216,75 @@ export default function MainLayout() {
               )}
             </div>
 
+            {/* Auth */}
             {user ? (
               <>
-                <span style={{ fontSize: 14, color: 'var(--color-muted)' }}>{user.name}님</span>
+                <span style={{ fontSize: 13, color: 'var(--color-neutral-500)', padding: '0 4px' }}>
+                  {(user as any).name}님
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    dispatch(logout());
-                    nav('/');
-                  }}
+                  onClick={() => { dispatch(logout()); nav('/'); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4 }}
                 >
+                  <LogOut size={14} />
                   로그아웃
                 </Button>
               </>
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <LogIn size={14} />
                     로그인
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button size="sm">시작하기</Button>
+                  <Button size="sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <UserPlus size={14} />
+                    시작하기
+                  </Button>
                 </Link>
               </>
             )}
           </div>
         </div>
       </header>
-      <main style={{ minHeight: 'calc(100vh - 64px)' }}>
+
+      {/* ── Page ── */}
+      <main style={{ minHeight: 'calc(100dvh - var(--nav-h))' }}>
         <Outlet />
       </main>
+
+      {/* ── Footer ── */}
       <footer
         style={{
-          padding: '40px 24px',
-          background: '#1f2937',
-          color: '#9ca3af',
-          fontSize: 14,
-          marginTop: 64,
+          background: 'var(--color-neutral-900)',
+          borderTop: '1px solid var(--color-neutral-800)',
+          color: 'var(--color-neutral-500)',
+          fontSize: 13,
+          padding: '32px 24px',
         }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>© 면접 인강 P1 · 교육용 프로젝트</div>
+        <div
+          style={{
+            maxWidth: 'var(--max-w)', margin: '0 auto',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flexWrap: 'wrap', gap: 16,
+          }}
+        >
+          <div>
+            <span style={{ fontWeight: 700, color: 'var(--color-neutral-200)', fontSize: 15 }}>
+              면접<span style={{ color: 'var(--color-primary-500)' }}>인강</span>
+            </span>
+            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-neutral-600)' }}>
+              취업 준비를 위한 면접 강의 플랫폼 · 교육용 P1 프로젝트
+            </p>
+          </div>
+          <p style={{ margin: 0 }}>© 2026 면접인강. All rights reserved.</p>
+        </div>
       </footer>
     </>
   );
 }
-

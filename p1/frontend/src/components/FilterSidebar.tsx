@@ -15,152 +15,150 @@ export default function FilterSidebar({
 }) {
   const [jobGroupOpen, setJobGroupOpen] = useState<string | null>('IT개발');
 
-  const inputBase: React.CSSProperties = {
-    width: '100%',
-    maxWidth: '100%',
-    padding: '10px 10px',
-    borderRadius: 8,
-    border: '1px solid var(--color-border)',
-    fontSize: 14,
-    minWidth: 0,
-    boxSizing: 'border-box',
-  };
+  const label = (text: string) => (
+    <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--color-neutral-500)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+      {text}
+    </span>
+  );
 
-  const pillStyle = (active: boolean, color = 'var(--color-brand)'): React.CSSProperties => ({
-    padding: '5px 12px',
-    borderRadius: 20,
-    border: `1px solid ${active ? color : 'var(--color-border)'}`,
-    background: active ? color : '#fff',
-    color: active ? '#fff' : 'inherit',
+  const pillActive: React.CSSProperties = {
+    background: 'var(--color-primary-500)',
+    color: '#fff',
+    borderColor: 'var(--color-primary-500)',
+  };
+  const pillInactive: React.CSSProperties = {
+    background: 'var(--color-neutral-0)',
+    color: 'var(--color-neutral-600)',
+    borderColor: 'var(--color-neutral-200)',
+  };
+  const pillStyle = (active: boolean, accent = false): React.CSSProperties => ({
+    padding: '4px 10px',
+    borderRadius: 'var(--radius-full)',
+    border: `1px solid ${active ? (accent ? 'var(--color-primary-500)' : 'var(--color-primary-500)') : 'var(--color-neutral-200)'}`,
+    background: active ? (accent ? 'var(--color-primary-500)' : 'var(--color-primary-500)') : 'var(--color-neutral-0)',
+    color: active ? '#fff' : 'var(--color-neutral-600)',
     cursor: 'pointer',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: active ? 600 : 400,
-    transition: 'background 0.12s, border-color 0.12s',
+    transition: 'background 100ms, border-color 100ms, color 100ms',
+    fontFamily: 'inherit',
   });
 
   return (
     <aside
       style={{
         width: '100%',
-        maxWidth: 280,
-        minWidth: 0,
-        padding: 24,
-        background: 'var(--color-surface)',
+        maxWidth: 256,
+        minWidth: 200,
+        padding: '20px',
+        background: 'var(--color-neutral-0)',
         borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--color-border)',
+        border: '1px solid var(--color-neutral-200)',
         height: 'fit-content',
         position: 'sticky',
-        top: 88,
-        overflow: 'hidden',
+        top: 'calc(var(--nav-h) + 16px)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20,
       }}
     >
-      <h3 style={{ margin: '0 0 16px', fontSize: 16 }}>필터</h3>
+      {/* 헤더 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--color-neutral-900)' }}>필터</h3>
+        <button
+          type="button"
+          onClick={onReset}
+          style={{ fontSize: 12, color: 'var(--color-neutral-500)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+        >
+          전체 초기화
+        </button>
+      </div>
+
+      <hr style={{ margin: 0, border: 'none', borderTop: '1px solid var(--color-neutral-200)' }} />
 
       {/* 검색 */}
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>검색</label>
-      <input
-        type="search"
-        value={filters.q}
-        onChange={(e) => onFilter('q', e.target.value)}
-        placeholder="강의명 검색"
-        style={{ ...inputBase, marginBottom: 20 }}
-      />
+      <div>
+        {label('검색')}
+        <input
+          type="search"
+          value={filters.q}
+          onChange={(e) => onFilter('q', e.target.value)}
+          placeholder="강의명 검색"
+          className="ui-input"
+          style={{ fontSize: 13 }}
+        />
+      </div>
 
-      {/* ── 1단계: 면접 방식 ── */}
-      <div style={{ marginBottom: 20 }}>
+      {/* 면접 방식 */}
+      <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <label style={{ fontSize: 13, fontWeight: 700 }}>① 면접 방식</label>
+          {label('① 면접 방식')}
           {filters.category && (
-            <button
-              type="button"
-              onClick={() => onFilter('category', '')}
-              style={{ fontSize: 11, color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
+            <button type="button" onClick={() => onFilter('category', '')}
+              style={{ fontSize: 11, color: 'var(--color-neutral-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginTop: -8 }}>
               초기화
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {INTERVIEW_TYPES.map((t: string) => (
-            <button
-              key={t}
-              type="button"
+            <button key={t} type="button"
               onClick={() => onFilter('category', filters.category === t ? '' : t)}
-              style={pillStyle(filters.category === t)}
-            >
+              style={pillStyle(filters.category === t)}>
               {t}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 1단계 → 2단계 연결 안내 화살표 */}
+      {/* 선택 화살표 */}
       {filters.category && (
-        <div
-          style={{
-            textAlign: 'center',
-            fontSize: 12,
-            color: 'var(--color-brand)',
-            fontWeight: 600,
-            marginBottom: 8,
-          }}
-        >
-          ↓ &nbsp;{filters.category} 분야 선택
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-primary-600)', fontWeight: 600, margin: '-12px 0' }}>
+          ↓ {filters.category}
         </div>
       )}
 
-      {/* ── 2단계: 직무/분야 ── */}
-      <div style={{ marginBottom: 20 }}>
+      {/* 직무/분야 */}
+      <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <label style={{ fontSize: 13, fontWeight: 700 }}>② 직무/분야</label>
+          {label('② 직무/분야')}
           {filters.jobField && (
-            <button
-              type="button"
-              onClick={() => onFilter('jobField', '')}
-              style={{ fontSize: 11, color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-            >
+            <button type="button" onClick={() => onFilter('jobField', '')}
+              style={{ fontSize: 11, color: 'var(--color-neutral-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit', marginTop: -8 }}>
               초기화
             </button>
           )}
         </div>
 
         {JOB_FIELDS.map((group: { group: string; items: string[] }) => (
-          <div key={group.group} style={{ marginBottom: 10 }}>
-            {/* 그룹 토글 헤더 */}
+          <div key={group.group} style={{ marginBottom: 8 }}>
             <button
               type="button"
               onClick={() => setJobGroupOpen(jobGroupOpen === group.group ? null : group.group)}
               style={{
-                width: '100%',
-                textAlign: 'left',
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                padding: '7px 10px',
-                fontSize: 12,
-                fontWeight: 700,
-                color: 'var(--color-muted)',
-                cursor: 'pointer',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 6,
+                width: '100%', textAlign: 'left',
+                background: 'var(--color-neutral-50)',
+                border: '1px solid var(--color-neutral-200)',
+                borderRadius: 6, padding: '6px 10px',
+                fontSize: 12, fontWeight: 600, color: 'var(--color-neutral-600)',
+                cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                marginBottom: 6, fontFamily: 'inherit',
+                transition: 'background 100ms',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-neutral-100)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-neutral-50)'; }}
             >
               {group.group}
-              <span style={{ fontSize: 10 }}>{jobGroupOpen === group.group ? '▲' : '▼'}</span>
+              <span style={{ fontSize: 10, color: 'var(--color-neutral-400)' }}>
+                {jobGroupOpen === group.group ? '▲' : '▼'}
+              </span>
             </button>
-
-            {/* 그룹 아이템 */}
             {jobGroupOpen === group.group && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 4 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingLeft: 2 }}>
                 {group.items.map((item: string) => (
-                  <button
-                    key={item}
-                    type="button"
+                  <button key={item} type="button"
                     onClick={() => onFilter('jobField', filters.jobField === item ? '' : item)}
-                    style={pillStyle(filters.jobField === item, '#6366f1')}
-                  >
+                    style={pillStyle(filters.jobField === item, true)}>
                     {item}
                   </button>
                 ))}
@@ -170,90 +168,60 @@ export default function FilterSidebar({
         ))}
       </div>
 
-      {/* 현재 선택 요약 */}
+      {/* 선택 요약 */}
       {(filters.category || filters.jobField) && (
-        <div
-          style={{
-            padding: '8px 12px',
-            background: '#f0f9ff',
-            border: '1px solid #bae6fd',
-            borderRadius: 8,
-            fontSize: 12,
-            marginBottom: 16,
-            lineHeight: 1.6,
-          }}
-        >
-          <strong>선택된 필터</strong>
-          <br />
-          {filters.category && <span>방식: <strong>{filters.category}</strong></span>}
-          {filters.category && filters.jobField && ' · '}
-          {filters.jobField && <span>분야: <strong>{filters.jobField}</strong></span>}
+        <div style={{ padding: '10px 12px', background: 'var(--color-primary-50)', border: '1px solid var(--color-primary-200)', borderRadius: 8, fontSize: 12, lineHeight: 1.7 }}>
+          <strong style={{ color: 'var(--color-primary-700)' }}>선택된 필터</strong>
+          {filters.category && <div style={{ color: 'var(--color-neutral-600)' }}>방식: <strong>{filters.category}</strong></div>}
+          {filters.jobField && <div style={{ color: 'var(--color-neutral-600)' }}>분야: <strong>{filters.jobField}</strong></div>}
         </div>
       )}
 
-      {/* 난이도 */}
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>난이도</label>
-      <select value={filters.difficulty} onChange={(e) => onFilter('difficulty', e.target.value)} style={{ ...inputBase, marginBottom: 20 }}>
-        <option value="">전체</option>
-        {DIFFICULTIES.map((d: string) => (
-          <option key={d} value={d}>{d}</option>
-        ))}
-      </select>
+      <hr style={{ margin: 0, border: 'none', borderTop: '1px solid var(--color-neutral-200)' }} />
 
-      {/* 무료 강의 */}
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, cursor: 'pointer' }}>
-        <input type="checkbox" checked={filters.freeOnly} onChange={(e) => onFilter('freeOnly', e.target.checked)} />
-        <span style={{ fontSize: 14 }}>무료 강의만</span>
+      {/* 난이도 */}
+      <div>
+        {label('난이도')}
+        <select value={filters.difficulty} onChange={(e) => onFilter('difficulty', e.target.value)} className="ui-select" style={{ fontSize: 13 }}>
+          <option value="">전체</option>
+          {DIFFICULTIES.map((d: string) => <option key={d} value={d}>{d}</option>)}
+        </select>
+      </div>
+
+      {/* 무료 */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--color-neutral-700)', fontWeight: 500 }}>
+        <input type="checkbox" checked={filters.freeOnly} onChange={(e) => onFilter('freeOnly', e.target.checked)}
+          style={{ width: 16, height: 16, accentColor: 'var(--color-primary-500)' }} />
+        무료 강의만 보기
       </label>
 
-      {/* 가격 범위 */}
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>가격 (원)</label>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
-          gap: 8,
-          alignItems: 'center',
-          marginBottom: 20,
-          width: '100%',
-          maxWidth: '100%',
-        }}
-      >
-        <input
-          type="number"
-          placeholder="최소"
-          value={filters.min_price}
-          onChange={(e) => onFilter('min_price', e.target.value)}
-          disabled={filters.freeOnly}
-          style={{ ...inputBase, opacity: filters.freeOnly ? 0.5 : 1 }}
-        />
-        <span style={{ flexShrink: 0, color: 'var(--color-muted)', fontSize: 14 }}>~</span>
-        <input
-          type="number"
-          placeholder="최대"
-          value={filters.max_price}
-          onChange={(e) => onFilter('max_price', e.target.value)}
-          disabled={filters.freeOnly}
-          style={{ ...inputBase, opacity: filters.freeOnly ? 0.5 : 1 }}
-        />
+      {/* 가격 */}
+      <div>
+        {label('가격 (원)')}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 16px 1fr', gap: 8, alignItems: 'center' }}>
+          <input type="number" placeholder="최소" value={filters.min_price}
+            onChange={(e) => onFilter('min_price', e.target.value)}
+            disabled={filters.freeOnly}
+            className="ui-input" style={{ fontSize: 12, opacity: filters.freeOnly ? 0.4 : 1 }} />
+          <span style={{ textAlign: 'center', color: 'var(--color-neutral-400)', fontSize: 12 }}>~</span>
+          <input type="number" placeholder="최대" value={filters.max_price}
+            onChange={(e) => onFilter('max_price', e.target.value)}
+            disabled={filters.freeOnly}
+            className="ui-input" style={{ fontSize: 12, opacity: filters.freeOnly ? 0.4 : 1 }} />
+        </div>
       </div>
 
       {/* 정렬 */}
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>정렬</label>
-      <select value={filters.sort} onChange={(e) => onFilter('sort', e.target.value)} style={{ ...inputBase, marginBottom: 20 }}>
-        {SORT_OPTIONS.map((o: { value: string; label: string }) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 8 }}>
-        <Button variant="secondary" size="sm" onClick={onReset} style={{ width: '100%', justifyContent: 'center' }}>
-          초기화
-        </Button>
-        <Button size="sm" onClick={onApply} style={{ width: '100%', justifyContent: 'center' }}>
-          필터 적용
-        </Button>
+      <div>
+        {label('정렬')}
+        <select value={filters.sort} onChange={(e) => onFilter('sort', e.target.value)} className="ui-select" style={{ fontSize: 13 }}>
+          {SORT_OPTIONS.map((o: { value: string; label: string }) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
+
+      <Button onClick={onApply} style={{ width: '100%', justifyContent: 'center' }}>
+        필터 적용
+      </Button>
     </aside>
   );
 }

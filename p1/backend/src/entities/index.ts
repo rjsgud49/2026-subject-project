@@ -7,3 +7,4 @@ export { VideoProgress } from './video-progress.entity';
 export { CartItem } from './cart-item.entity';
 export { Question } from './question.entity';
 export { Answer } from './answer.entity';
+export { FeedbackSubmission } from './feedback-submission.entity';
