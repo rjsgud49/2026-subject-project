@@ -22,6 +22,10 @@ export class User {
   @Column({ type: 'varchar', length: 100, default: 'User' })
   name: string;
 
+  /** 강사 프로필 소개(경력·약력 등) */
+  @Column({ type: 'text', nullable: true })
+  bio: string | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   passwordHash: string | null;
 

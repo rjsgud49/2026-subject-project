@@ -2,9 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Course } from '../entities/course.entity';
+import { User } from '../entities/user.entity';
 
 export interface CourseListQuery {
   q?: string;
+  instructor_name?: string;
   category?: string;
   interviewType?: string;
   difficulty?: string;
@@ -20,20 +22,30 @@ export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private courseRepo: Repository<Course>,
+    @InjectRepository(User)
+    private userRepo: Repository<User>,
   ) {}
 
   async findAll(query: CourseListQuery) {
     const page = Math.max(1, Number(query.page) || 1);
-    const size = Math.min(100, Math.max(1, Number(query.size) || 12));
+    const instructorFilter = query.instructor_name?.trim() ?? '';
+    const maxSize = 100;
+    const size = Math.min(maxSize, Math.max(1, Number(query.size) || 12));
     const qb = this.courseRepo
       .createQueryBuilder('c')
       .leftJoinAndSelect('c.instructor', 'instructor')
       .where('c.isPublished = :pub', { pub: true });
 
+    if (instructorFilter) {
+      qb.andWhere('instructor.name = :instructorName', { instructorName: instructorFilter });
+    }
+
     if (query.q?.trim()) {
-      qb.andWhere('(c.title ILIKE :q OR c.description ILIKE :q)', {
-        q: `%${query.q.trim()}%`,
-      });
+      const qv = `%${query.q.trim()}%`;
+      qb.andWhere(
+        '(c.title ILIKE :q OR c.description ILIKE :q OR instructor.name ILIKE :q)',
+        { q: qv },
+      );
     }
     if (query.category) {
       qb.andWhere('c.category = :category', { category: query.category });
@@ -70,21 +82,76 @@ export class CoursesService {
       .take(size)
       .getManyAndCount();
 
+    let instructor_meta:
+      | {
+          name: string;
+          bio: string | null;
+          categories: string[];
+          total_courses: number;
+        }
+      | undefined;
+
+    if (instructorFilter) {
+      const baseInstructorQb = () =>
+        this.courseRepo
+          .createQueryBuilder('c')
+          .innerJoin('c.instructor', 'instructor')
+          .where('c.isPublished = :pub', { pub: true })
+          .andWhere('instructor.name = :instructorName', {
+            instructorName: instructorFilter,
+          });
+
+      const [totalCoursesForInstructor, categoryRows] = await Promise.all([
+        baseInstructorQb().getCount(),
+        baseInstructorQb()
+          .select('c.category', 'category')
+          .andWhere('c.category IS NOT NULL')
+          .groupBy('c.category')
+          .orderBy('c.category', 'ASC')
+          .getRawMany(),
+      ]);
+      const categories = categoryRows
+        .map((r: { category: string | null }) => r.category)
+        .filter((c): c is string => Boolean(c));
+
+      let bio: string | null = null;
+      let displayName = instructorFilter;
+      if (items.length > 0) {
+        const inst = items[0].instructor;
+        displayName = inst?.name ?? instructorFilter;
+        bio = inst?.bio ?? null;
+      } else {
+        const user = await this.userRepo.findOne({
+          where: { name: instructorFilter, role: 'instructor' },
+        });
+        bio = user?.bio ?? null;
+        if (user?.name) displayName = user.name;
+      }
+
+      instructor_meta = {
+        name: displayName,
+        bio,
+        categories,
+        total_courses: totalCoursesForInstructor,
+      };
+    }
+
     return {
       items: items.map((c) => ({
         id: c.id,
         title: c.title,
         instructor_name: c.instructor?.name ?? '',
-      category: c.category,
-      interview_type: c.interviewType,
-      difficulty: c.difficulty,
-      price: Number(c.price),
-      thumbnail_url: c.thumbnailUrl,
-      created_at: c.createdAt,
+        category: c.category,
+        interview_type: c.interviewType,
+        difficulty: c.difficulty,
+        price: Number(c.price),
+        thumbnail_url: c.thumbnailUrl,
+        created_at: c.createdAt,
       })),
       total,
       page,
       size,
+      instructor_meta,
     };
   }
 
@@ -101,6 +168,7 @@ export class CoursesService {
       description: course.description,
       instructor_id: course.instructorId,
       instructor_name: course.instructor?.name ?? '',
+      instructor_bio: course.instructor?.bio ?? null,
       category: course.category,
       interview_type: course.interviewType,
       difficulty: course.difficulty,

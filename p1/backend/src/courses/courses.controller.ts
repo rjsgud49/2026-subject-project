@@ -10,6 +10,7 @@ export class CoursesController {
   findAll(@Query() query: CourseQueryDto) {
     return this.coursesService.findAll({
       q: query.q,
+      instructor_name: query.instructor_name,
       category: query.category,
       interviewType: query.interviewType,
       difficulty: query.difficulty,

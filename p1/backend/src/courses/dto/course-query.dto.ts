@@ -7,6 +7,10 @@ export class CourseQueryDto {
 
   @IsOptional()
   @IsString()
+  instructor_name?: string;
+
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @IsOptional()

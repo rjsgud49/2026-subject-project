@@ -251,6 +251,7 @@ const ALL_COURSES   = [...BASE_COURSES_RAW, ...COMBO_COURSES];
 export function getMockCoursesList(queryString = '') {
   const params     = new URLSearchParams(queryString.replace(/^\?/, ''));
   const q           = (params.get('q')            || '').toLowerCase();
+  const instructorName = (params.get('instructor_name') || '').trim();
   const category    = params.get('category')       || ''; // 직무/분야
   const interviewType = params.get('interviewType') || ''; // 면접 방식
   const difficulty  = params.get('difficulty')     || '';
@@ -262,6 +263,24 @@ export function getMockCoursesList(queryString = '') {
   const size        = Math.max(1, Number(params.get('size') || 12));
 
   let result = [...ALL_COURSES];
+  let instructor_meta;
+
+  if (instructorName) {
+    const byInst = ALL_COURSES.filter((c) => c.instructor_name === instructorName);
+    const categoriesList = [...new Set(byInst.map((c) => c.category).filter(Boolean))].sort((a, b) =>
+      String(a).localeCompare(String(b), 'ko'),
+    );
+    const first = byInst[0];
+    instructor_meta = {
+      name: first?.instructor_name || instructorName,
+      bio: first
+        ? `${first.instructor_name} 강사. 현업 실무 경험 기반의 면접 전략 전문가입니다.`
+        : `${instructorName} 강사 프로필입니다. 아직 등록된 공개 강의가 없습니다.`,
+      categories: categoriesList,
+      total_courses: byInst.length,
+    };
+    result = byInst;
+  }
 
   // 두 필터 모두 서버 측에서 처리 → 페이지네이션 전 적용
   if (category)     result = result.filter((c) => c.category      === category);
@@ -282,7 +301,8 @@ export function getMockCoursesList(queryString = '') {
 
   const total = result.length;
   const items = result.slice((page - 1) * size, page * size);
-  return { items, total, page, size };
+
+  return { items, total, page, size, instructor_meta };
 }
 
 export const MOCK_COURSES_LIST = getMockCoursesList();

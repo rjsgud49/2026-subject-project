@@ -87,18 +87,30 @@ async function seed() {
     `SELECT setval(pg_get_serial_sequence('users','id'), (SELECT COALESCE(MAX(id), 1) FROM users))`,
   );
 
+  const INSTRUCTOR_BIO =
+    'IT·면접 코칭 경력 10년 이상. 대형 테크 기업 시니어 엔지니어 출신으로, 기술·인성·PT 면접까지 실전 중심으로 지도합니다. 수강생 합격 후기 다수.';
+
   let instructor = await userRepo.findOne({ where: { email: 'instructor@p1.local' } });
   if (!instructor) {
     instructor = userRepo.create({
       name: '김민준',
       email: 'instructor@p1.local',
       role: 'instructor',
+      bio: INSTRUCTOR_BIO,
     });
     await userRepo.save(instructor);
   }
-  if (instructor && !instructor.passwordHash) {
-    instructor.passwordHash = await bcrypt.hash(DEFAULT_INSTRUCTOR_PASSWORD, 10);
-    await userRepo.save(instructor);
+  if (instructor) {
+    let changed = false;
+    if (!instructor.passwordHash) {
+      instructor.passwordHash = await bcrypt.hash(DEFAULT_INSTRUCTOR_PASSWORD, 10);
+      changed = true;
+    }
+    if (!instructor.bio) {
+      instructor.bio = INSTRUCTOR_BIO;
+      changed = true;
+    }
+    if (changed) await userRepo.save(instructor);
   }
 
   const videoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
