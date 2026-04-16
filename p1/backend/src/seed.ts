@@ -16,6 +16,17 @@ import { Question } from './entities/question.entity';
 import { Answer } from './entities/answer.entity';
 import * as bcrypt from 'bcryptjs';
 
+/** 제목·직무 카테고리로 면접 방식 추론 (필터 API용, interview_type 백필) */
+function inferInterviewType(title: string, category: string): string {
+  const t = `${title} ${category}`;
+  if (/PT|발표|스피치|프레젠|케이스\s*PT|문서 기반\s*PT/i.test(t)) return 'PT면접';
+  if (/영어|Tell me|English|외국계|영어면접/i.test(t)) return '영어면접';
+  if (/그룹|토론|집단|토의형/i.test(t)) return '그룹면접';
+  if (/인성|STAR|자기소개|이력서|가치관|갈등|성장·실패|압박 질문|직장인 태도/i.test(t)) return '인성면접';
+  if (['인성면접', 'PT면접', '영어면접', '그룹면접', '기술면접'].includes(category)) return category;
+  return '기술면접';
+}
+
 const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST ?? 'localhost',
@@ -307,6 +318,7 @@ async function seed() {
         description: seed.description,
         instructorId: instructor.id,
         category: seed.category,
+        interviewType: inferInterviewType(seed.title, seed.category),
         difficulty: seed.difficulty,
         price: seed.price,
         isPublished: true,
@@ -427,8 +439,17 @@ async function seed() {
     }
   }
 
+  const missingIt = await courseRepo
+    .createQueryBuilder('c')
+    .where('c.interview_type IS NULL')
+    .getMany();
+  for (const c of missingIt) {
+    c.interviewType = inferInterviewType(c.title, c.category ?? '');
+    await courseRepo.save(c);
+  }
+
   console.log(
-    `Seed done. courses_total=${totalCourses} (new=${createdCourseIds.length}, target=120+), cart=${cartTarget.length}, enroll=${enrollTarget.length}`,
+    `Seed done. courses_total=${totalCourses} (new=${createdCourseIds.length}, target=120+), cart=${cartTarget.length}, enroll=${enrollTarget.length}, interview_type_backfill=${missingIt.length}`,
   );
 
   await dataSource.destroy();

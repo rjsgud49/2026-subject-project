@@ -29,8 +29,8 @@ export default function CourseList() {
   }, [searchParams, dispatch]);
 
   useEffect(() => {
-    if (user) dispatch(fetchEnrollments());
-  }, [user, dispatch]);
+    dispatch(fetchEnrollments());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchCourses());
@@ -46,9 +46,8 @@ export default function CourseList() {
   const totalPages = Math.max(1, Math.ceil(total / size));
   const enrolledCourseIds = new Set((enrollments || []).map((e: any) => Number(e.course_id)));
 
-  // 모든 카테고리·직무 필터링은 서버(API)에서 처리하므로 클라이언트에서 추가 필터링 불필요
-  // 수강 중인 강의만 목록에서 제외 (로그인 유저 한정)
-  const visibleItems = user ? items.filter((c: any) => !enrolledCourseIds.has(Number(c.id))) : items;
+  // 필터·페이징은 서버(API) 처리. 수강 중인 강의도 목록에 두고 카드에 뱃지로 표시
+  const visibleItems = items;
 
   return (
     <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto', padding: '40px 24px' }}>
@@ -108,8 +107,13 @@ export default function CourseList() {
             </div>
           )}
           {listStatus === 'failed' && (
-            <div style={{ padding: '20px', background: 'var(--color-error-50)', borderRadius: 8, border: '1px solid var(--color-error-100)', fontSize: 14, color: 'var(--color-error-700)' }}>
-              강의 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+            <div style={{ padding: '20px', background: 'var(--color-error-50)', borderRadius: 8, border: '1px solid var(--color-error-100)', fontSize: 14, color: 'var(--color-error-700)', lineHeight: 1.6 }}>
+              <strong>강의 목록을 불러오지 못했습니다.</strong>
+              <p style={{ margin: '10px 0 0', color: 'var(--color-neutral-700)' }}>
+                백엔드가 꺼져 있으면 프록시 연결이 거절됩니다. 터미널에서 <code style={{ fontSize: 13 }}>p1/backend</code>에 들어가{' '}
+                <code style={{ fontSize: 13 }}>npm run start:dev</code>(기본 포트 3000)을 실행하거나, 프론트{' '}
+                <code style={{ fontSize: 13 }}>.env</code>에 <code style={{ fontSize: 13 }}>VITE_USE_MOCK=true</code>로 목 데이터를 켜 주세요.
+              </p>
             </div>
           )}
           {listStatus === 'succeeded' && items.length === 0 && (
@@ -119,20 +123,18 @@ export default function CourseList() {
               action={<Button variant="secondary" onClick={() => dispatch(resetFilters())}>필터 초기화</Button>}
             />
           )}
-          {listStatus === 'succeeded' && items.length > 0 && visibleItems.length === 0 && (
-            <EmptyState
-              title="이미 수강 중인 강의만 남아있어요."
-              description="다른 검색 조건을 사용하거나 아직 구매하지 않은 강의를 찾아보세요."
-              action={<Button variant="secondary" onClick={() => dispatch(resetFilters())}>필터 초기화</Button>}
-            />
-          )}
           {visibleItems.length > 0 && (
             <div style={viewMode === 'grid'
               ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }
               : { display: 'flex', flexDirection: 'column', gap: 12 }
             }>
               {visibleItems.map((c: any) => (
-                <CourseCard key={c.id} course={c} viewMode={viewMode} isEnrolled={enrolledCourseIds.has(Number(c.id))} />
+                <CourseCard
+                  key={c.id}
+                  course={c}
+                  viewMode={viewMode}
+                  isEnrolled={enrolledCourseIds.has(Number(c.id))}
+                />
               ))}
             </div>
           )}

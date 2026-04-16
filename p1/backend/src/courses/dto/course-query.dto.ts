@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumberString, IsIn } from 'class-validator';
+import { IsOptional, IsString, IsNumberString, IsIn, MaxLength } from 'class-validator';
 
 export class CourseQueryDto {
   @IsOptional()
@@ -17,10 +17,10 @@ export class CourseQueryDto {
   @IsString()
   interviewType?: string;
 
+  /** DB 시드는 초급/중급/고급(한글) 사용 — 영문 값도 허용 */
   @IsOptional()
-  @IsIn(['beginner', 'intermediate', 'advanced'], {
-    message: 'difficulty는 beginner, intermediate, advanced 중 하나여야 합니다.',
-  })
+  @IsString()
+  @MaxLength(30, { message: 'difficulty는 30자 이하여야 합니다.' })
   difficulty?: string;
 
   @IsOptional()
