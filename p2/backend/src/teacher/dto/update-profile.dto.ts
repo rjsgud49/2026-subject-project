@@ -14,6 +14,16 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(400000)
+  profile_html?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  banner_url?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(60)
   settlement_bank?: string;
 

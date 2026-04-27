@@ -66,6 +66,28 @@ export default function StudentFeedbackNew() {
     <div className="page-pad narrow-form">
       <h1 className="page-title">피드백 요청하기</h1>
       <p className="muted">면접 답변, 포트폴리오, 자기소개서 관련 질문을 남기세요. 자료는 파일로 올리면 강사가 바로 열람할 수 있습니다.</p>
+
+      <div
+        role="note"
+        style={{
+          margin: '16px 0 20px',
+          padding: '14px 16px',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--color-primary-200)',
+          background: 'var(--color-primary-50)',
+          fontSize: 13,
+          lineHeight: 1.65,
+          color: 'var(--color-neutral-800)',
+        }}
+      >
+        <strong style={{ display: 'block', marginBottom: 8, color: 'var(--color-primary-800)' }}>첨부 파일을 올리기 전에</strong>
+        <ul style={{ margin: 0, paddingLeft: 18 }}>
+          <li>열어보아 <strong>내용·버전이 맞는 파일</strong>인지(최종본, 암호 해제 여부 등) 꼭 확인한 뒤 업로드해 주세요.</li>
+          <li>선택 후 아래 목록에 나오는 <strong>파일 이름</strong>이 내 컴퓨터에서 본 이름과 같은지 확인해 주세요. 다르면 해당 파일을 제거하고 다시 선택해 주세요.</li>
+          <li>허용되지 않는 형식이나 용량 초과 시 등록이 거절될 수 있습니다.</li>
+        </ul>
+      </div>
+
       <form className="form" onSubmit={(e) => void onSubmit(e)}>
         <label>
           제목
@@ -128,7 +150,7 @@ export default function StudentFeedbackNew() {
             />
           </label>
           <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-neutral-500)' }}>
-            이미지, PDF, 문서(hwp/doc), 영상, zip 등 (서버 정책에 따라 일부 형식만 허용)
+            이미지, PDF, 문서(hwp/doc), 영상, zip 등 (서버 정책에 따라 일부 형식만 허용). 한글·특수문자 파일명도 그대로 표시됩니다.
           </p>
         </div>
 

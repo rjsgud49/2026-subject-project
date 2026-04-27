@@ -21,9 +21,11 @@ import {
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
+import { AddFeedbackMessageDto } from './dto/add-feedback-message.dto';
 import { TeacherFeedbackUpdateDto } from './dto/teacher-feedback-update.dto';
 import { FeedbackService } from './feedback.service';
 import { p2DiskStorage } from '../upload.storage';
+import { resolveUploadDisplayName } from '../upload.display-name';
 import { assertStudentFeedbackUpload } from '../upload.validation';
 
 @Controller()
@@ -41,12 +43,13 @@ export class FeedbackController {
   )
   uploadAttachment(
     @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('originalFilename') originalFilename?: string | string[],
   ): { url: string; filename: string; stored: string } {
     if (!file) throw new BadRequestException('파일이 없습니다.');
     assertStudentFeedbackUpload(file);
     return {
       url: `/api/v1/files/${file.filename}`,
-      filename: file.originalname,
+      filename: resolveUploadDisplayName(originalFilename, file.originalname),
       stored: file.filename,
     };
   }
@@ -61,6 +64,25 @@ export class FeedbackController {
   @Roles('student')
   mine(@CurrentUser() user: AuthUser) {
     return this.feedbackService.listMine(user.id);
+  }
+
+  @Get('feedback/:id')
+  @Roles('student')
+  studentGetOne(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.feedbackService.getOneForStudent(user.id, id);
+  }
+
+  @Post('feedback/:id/messages')
+  @Roles('student')
+  studentAddMessage(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddFeedbackMessageDto,
+  ) {
+    return this.feedbackService.addStudentMessage(user.id, id, dto);
   }
 
   @Get('teacher/feedback')
@@ -86,5 +108,15 @@ export class FeedbackController {
     @Body() dto: TeacherFeedbackUpdateDto,
   ) {
     return this.feedbackService.updateByTeacher(user.id, id, dto);
+  }
+
+  @Post('teacher/feedback/:id/messages')
+  @Roles('teacher')
+  teacherAddMessage(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddFeedbackMessageDto,
+  ) {
+    return this.feedbackService.addTeacherMessage(user.id, id, dto);
   }
 }

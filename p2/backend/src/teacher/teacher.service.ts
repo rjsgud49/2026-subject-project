@@ -158,6 +158,14 @@ export class TeacherService {
     return { ok: true };
   }
 
+  mediaUploadResponse(file: Express.Multer.File) {
+    return {
+      url: `/api/v1/files/${file.filename}`,
+      filename: file.originalname,
+      stored: file.filename,
+    };
+  }
+
   async confirmUpload(
     instructorId: number,
     courseId: number,
@@ -169,11 +177,16 @@ export class TeacherService {
     if (Number(c.instructorId) !== Number(instructorId)) {
       throw new ForbiddenException('본인 강의에만 업로드할 수 있습니다.');
     }
-    return {
-      url: `/api/v1/files/${file.filename}`,
-      filename: file.originalname,
-      stored: file.filename,
-    };
+    return this.mediaUploadResponse(file);
+  }
+
+  async setProfileBanner(userId: number, file: Express.Multer.File) {
+    const u = await this.userRepo.findOne({ where: { id: userId } });
+    if (!u) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    const url = `/api/v1/files/${file.filename}`;
+    u.bannerUrl = url;
+    await this.userRepo.save(u);
+    return { url, banner_url: url };
   }
 
   private async oneForTeacher(courseId: number, instructorId: number) {
@@ -189,6 +202,8 @@ export class TeacherService {
     if (!u) throw new NotFoundException('사용자를 찾을 수 없습니다.');
     if (dto.name !== undefined) u.name = dto.name;
     if (dto.bio !== undefined) u.bio = dto.bio ?? null;
+    if (dto.profile_html !== undefined) u.profileHtml = dto.profile_html ?? null;
+    if (dto.banner_url !== undefined) u.bannerUrl = dto.banner_url?.trim() || null;
     if (dto.settlement_bank !== undefined) {
       u.settlementBankName = dto.settlement_bank?.trim() || null;
     }
@@ -205,6 +220,8 @@ export class TeacherService {
       name: u.name,
       role: u.role,
       bio: u.bio,
+      profile_html: u.profileHtml,
+      banner_url: u.bannerUrl,
       settlement_bank: u.settlementBankName,
       settlement_account_no: u.settlementAccountNo,
       settlement_holder: u.settlementHolderName,

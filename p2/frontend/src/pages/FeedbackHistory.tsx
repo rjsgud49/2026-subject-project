@@ -6,10 +6,17 @@ import { api } from '../services/api';
 import Button from '../components/Button';
 import {
   FileText, Video, Award, Lock, Inbox, Paperclip,
-  Mail, Search, CheckCircle2, ChevronUp, ChevronDown, AlertCircle,
+  Mail, Search, CheckCircle2, ChevronUp, ChevronDown, AlertCircle, MessageCircle,
 } from 'lucide-react';
+import { formatDate } from '../utils/format';
 
 type SubmissionStatus = 'pending' | 'in_progress' | 'completed';
+
+interface ThreadMsg {
+  role: 'student' | 'teacher';
+  body: string;
+  at: string;
+}
 
 interface Submission {
   id: number;
@@ -21,6 +28,7 @@ interface Submission {
   fileNames: string[];
   status: SubmissionStatus;
   createdAt: string;
+  thread?: ThreadMsg[];
 }
 
 const PLAN_ICONS: Record<string, React.ElementType> = {
@@ -135,6 +143,26 @@ function SubmissionCard({ sub }: { sub: Submission }) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <Link
+            to={`/student/feedback/${sub.id}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--color-primary-600)',
+              textDecoration: 'none',
+              padding: '6px 10px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-primary-200)',
+              background: 'var(--color-neutral-0)',
+            }}
+          >
+            <MessageCircle size={15} />
+            문담
+          </Link>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: st.color, background: st.bg, padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
             <st.Icon size={12} />
             {st.label}
@@ -148,6 +176,66 @@ function SubmissionCard({ sub }: { sub: Submission }) {
 
       {expanded && (
         <div style={{ padding: '20px' }}>
+          <div
+            style={{
+              marginBottom: 18,
+              padding: '14px 16px',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-neutral-200)',
+              background: 'var(--color-neutral-50)',
+            }}
+          >
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageCircle size={18} color="var(--color-primary-500)" />
+              문답
+            </div>
+            {(sub.thread?.length ?? 0) > 0 ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                  {sub.thread!.slice(-6).map((m, i) => (
+                    <div
+                      key={`${m.at}-${i}`}
+                      style={{
+                        alignSelf: m.role === 'student' ? 'flex-end' : 'flex-start',
+                        maxWidth: '92%',
+                        padding: '8px 12px',
+                        borderRadius: 10,
+                        background: m.role === 'student' ? 'var(--color-primary-50)' : 'var(--color-neutral-0)',
+                        border: `1px solid ${m.role === 'student' ? 'var(--color-primary-200)' : 'var(--color-neutral-200)'}`,
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: 'var(--color-neutral-500)', marginBottom: 4 }}>
+                        {m.role === 'student' ? '나' : '강사'} · {formatDate(m.at)}
+                      </div>
+                      {m.body}
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  to={`/student/feedback/${sub.id}`}
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-primary-600)' }}
+                >
+                  전체 문담에서 답장하기 →
+                </Link>
+              </>
+            ) : (
+              <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--color-neutral-600)', lineHeight: 1.55 }}>
+                아직 주고받은 문답이 없습니다. 강사가 메시지를 내면 여기에 표시됩니다.
+              </p>
+            )}
+            <div style={{ marginTop: 10 }}>
+              <Link to={`/student/feedback/${sub.id}`}>
+                <Button size="sm" variant="secondary" style={{ display: 'inline-flex', gap: 6 }}>
+                  <MessageCircle size={15} />
+                  학생 문담 화면 열기
+                </Button>
+              </Link>
+            </div>
+          </div>
+
           <ProgressStepper status={sub.status} />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -249,6 +337,25 @@ export default function FeedbackHistory() {
         <Link to="/feedback" style={{ color: 'var(--color-neutral-600)' }}>피드백</Link>
         <span>›</span>
         <span style={{ color: 'var(--color-neutral-900)', fontWeight: 600 }}>신청 내역</span>
+      </div>
+
+      <div
+        style={{
+          marginBottom: 24,
+          padding: '14px 18px',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--color-primary-200)',
+          background: 'var(--color-primary-50)',
+          fontSize: 14,
+          color: 'var(--color-neutral-800)',
+          lineHeight: 1.6,
+        }}
+      >
+        <strong>강사와의 문답</strong>은 아래 각 건의 <strong>「문담」</strong> 또는{' '}
+        <Link to="/student/feedback" style={{ fontWeight: 700, color: 'var(--color-primary-700)' }}>
+          학생 메뉴 → 내 피드백
+        </Link>
+        에서 동일하게 확인·답장할 수 있습니다.
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>

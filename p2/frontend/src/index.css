@@ -208,6 +208,30 @@ button { font-family: inherit; }
   padding: 40px 24px;
 }
 
+/* MainLayout 등에서 Outlet 본문: 좌우 여백 + 가운데 정렬 */
+.page-pad {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  width: 100%;
+  padding: 28px 24px 56px;
+}
+
+.page-pad.narrow-form {
+  max-width: 640px;
+}
+
+.page-pad.page-pad--thread {
+  max-width: 720px;
+}
+
+.page-title {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-neutral-900);
+  margin: 0 0 12px;
+}
+
 /* ── 카드 ── */
 .card {
   background: var(--color-neutral-0);
@@ -401,4 +425,40 @@ button { font-family: inherit; }
     top: 0 !important;
     width: 100% !important;
   }
+}
+
+/* 강사 공개 프로필 HTML (표시 전 서버 저장본은 DOMPurify로 정제) */
+.instructor-rich {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--color-neutral-700);
+}
+.instructor-rich a {
+  color: var(--color-primary-600);
+}
+.instructor-rich img {
+  max-width: 100%;
+  height: auto;
+}
+.instructor-rich h1,
+.instructor-rich h2,
+.instructor-rich h3 {
+  margin: 0.65em 0 0.35em;
+  color: var(--color-neutral-900);
+}
+.instructor-rich p {
+  margin: 0.5em 0;
+}
+.instructor-rich ul,
+.instructor-rich ol {
+  padding-left: 1.25em;
+}
+
+.teacher-profile-quill .ql-editor {
+  min-height: 220px;
+  font-size: 15px;
+}
+.teacher-profile-quill .ql-container {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--color-neutral-0);
 }

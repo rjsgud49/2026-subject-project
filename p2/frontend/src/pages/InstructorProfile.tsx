@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import DOMPurify from 'dompurify';
 import { api } from '../services/api';
 import { formatPrice } from '../utils/format';
 import CourseThumbnail from '../components/CourseThumbnail';
@@ -15,6 +16,8 @@ const DIFFICULTY_LABEL: Record<string, string> = {
 type InstructorMeta = {
   name: string;
   bio: string | null;
+  profile_html?: string | null;
+  banner_url?: string | null;
   categories?: string[];
   total_courses?: number;
 };
@@ -46,9 +49,24 @@ export default function InstructorProfile() {
         ...(category ? { category } : {}),
       })
       .then((res: any) => {
-        setCourses(res?.items ?? []);
+        const items = res?.items ?? [];
+        setCourses(items);
         setTotal(Number(res?.total) || 0);
-        if (res?.instructor_meta) setMeta(res.instructor_meta);
+        if (res?.instructor_meta) {
+          setMeta(res.instructor_meta);
+        } else if (items[0]?.instructor_name) {
+          const f = items[0];
+          setMeta({
+            name: f.instructor_name,
+            bio: f.instructor_bio ?? null,
+            profile_html: f.instructor_profile_html ?? null,
+            banner_url: f.instructor_banner_url ?? null,
+            categories: res?.categories,
+            total_courses: Number(res?.total) || 0,
+          });
+        } else {
+          setMeta(null);
+        }
       })
       .catch(() => {
         setCourses([]);
@@ -59,6 +77,8 @@ export default function InstructorProfile() {
 
   const displayName = meta?.name ?? decodedName;
   const bio = meta?.bio;
+  const profileHtml = meta?.profile_html;
+  const bannerUrl = meta?.banner_url;
   const initial = displayName ? displayName[0] : '?';
   const categories = meta?.categories ?? [];
   const totalAll = meta?.total_courses ?? total;
@@ -91,6 +111,22 @@ export default function InstructorProfile() {
         <ChevronRight size={12} />
         <span aria-current="page" style={{ color: 'var(--color-neutral-900)', fontWeight: 500 }}>강사 프로필</span>
       </nav>
+
+      {bannerUrl ? (
+        <div
+          role="img"
+          aria-label="강사 프로필 배너"
+          style={{
+            height: 200,
+            marginBottom: 24,
+            borderRadius: 'var(--radius-xl)',
+            backgroundImage: `url(${bannerUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            border: '1px solid var(--color-neutral-200)',
+          }}
+        />
+      ) : null}
 
       {/* 프로필 카드 */}
       <div
@@ -132,7 +168,13 @@ export default function InstructorProfile() {
             </span>
           </div>
 
-          {bio ? (
+          {profileHtml ? (
+            <div
+              className="instructor-rich"
+              style={{ margin: '0 0 16px' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(profileHtml) }}
+            />
+          ) : bio ? (
             <p style={{ fontSize: 14, color: 'var(--color-neutral-600)', margin: '0 0 16px', lineHeight: 1.65 }}>
               {bio}
             </p>

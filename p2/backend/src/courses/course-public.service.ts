@@ -66,6 +66,8 @@ export class CoursePublicService {
         : null,
       instructor_name: c.instructor?.name ?? null,
       instructor_bio: c.instructor?.bio ?? null,
+      instructor_profile_html: c.instructor?.profileHtml ?? null,
+      instructor_banner_url: c.instructor?.bannerUrl ?? null,
       thumbnail_url: c.thumbnailUrl,
       sections: this.parseSections(c.curriculumJson),
       category: null,

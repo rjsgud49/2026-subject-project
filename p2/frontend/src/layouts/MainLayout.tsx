@@ -48,11 +48,13 @@ export default function MainLayout() {
           : '/dashboard';
 
   const navLinks = useMemo(() => {
+    if (isTeacher) {
+      return [{ to: classroomPath, label: '내 강의실', Icon: LayoutDashboard }] as const;
+    }
     const core = [
       { to: '/courses', label: '강의', Icon: BookOpen },
       { to: classroomPath, label: '내 강의실', Icon: LayoutDashboard },
     ] as const;
-    if (isTeacher) return [...core];
     return [...core, { to: '/cart', label: '장바구니', Icon: ShoppingCart }] as const;
   }, [classroomPath, isTeacher]);
 
@@ -103,7 +105,7 @@ export default function MainLayout() {
         >
           {/* Logo */}
           <Link
-            to="/"
+            to={isTeacher ? '/teacher' : '/'}
             style={{
               fontSize: 18, fontWeight: 800,
               color: 'var(--color-neutral-900)',

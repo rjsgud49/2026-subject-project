@@ -215,6 +215,25 @@ export default function FeedbackNew() {
         <section style={{ marginBottom: 28 }}>
           <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>③ 파일 업로드</h2>
           <div
+            role="note"
+            style={{
+              marginBottom: 14,
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-primary-200)',
+              background: 'var(--color-primary-50)',
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: 'var(--color-neutral-800)',
+            }}
+          >
+            <strong style={{ display: 'block', marginBottom: 6, color: 'var(--color-primary-800)' }}>업로드 전 확인</strong>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              <li>맞는 자료인지(최종본·암호 해제 등) 다시 확인한 뒤 올려 주세요.</li>
+              <li>아래 목록에 표시되는 <strong>파일 이름</strong>이 PC에서 본 이름과 같은지 확인해 주세요.</li>
+            </ul>
+          </div>
+          <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}

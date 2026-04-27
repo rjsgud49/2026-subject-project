@@ -1,9 +1,14 @@
-import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class TeacherFeedbackUpdateDto {
   @IsOptional()
   @IsIn(['pending', 'in_progress', 'answered'])
   status?: 'pending' | 'in_progress' | 'answered';
+
+  /** status 를 answered 로 바꿀 때 반드시 true (실수 방지) */
+  @IsOptional()
+  @IsBoolean()
+  confirmComplete?: boolean;
 
   @IsOptional()
   @IsString()

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, Upload } from 'lucide-react';
 import TeacherWorkspace from '../../components/TeacherWorkspace';
@@ -25,7 +25,8 @@ export default function TeacherCourseForm() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
-  const [uploadMsg, setUploadMsg] = useState('');
+  const [thumbBusy, setThumbBusy] = useState(false);
+  const [thumbErr, setThumbErr] = useState('');
 
   useEffect(() => {
     if (!isEdit) {
@@ -99,18 +100,29 @@ export default function TeacherCourseForm() {
     }
   }
 
-  async function onUploadFile(ev: React.ChangeEvent<HTMLInputElement>) {
+  const uploadVideoForCurriculum = useCallback(
+    async (file: File) => {
+      if (isEdit && Number.isFinite(id)) {
+        return api.teacher.uploadCourseFile(id, file);
+      }
+      return api.teacher.uploadVideo(file);
+    },
+    [isEdit, id],
+  );
+
+  async function onThumbnailFile(ev: React.ChangeEvent<HTMLInputElement>) {
     const file = ev.target.files?.[0];
     ev.target.value = '';
-    if (!file || !isEdit || !Number.isFinite(id)) return;
-    setUploadMsg('');
+    if (!file) return;
+    setThumbErr('');
+    setThumbBusy(true);
     try {
-      const r = await api.teacher.uploadCourseFile(id, file);
-      setUploadMsg(
-        `업로드 완료: ${r.filename} → 아래 커리큘럼의 해당 영상「영상 URL」칸에 붙여 넣으세요: ${r.url}`,
-      );
+      const r = await api.teacher.uploadImage(file);
+      setThumbnailUrl(r.url);
     } catch (ex: unknown) {
-      setUploadMsg(ex instanceof Error ? ex.message : '업로드 실패');
+      setThumbErr(ex instanceof Error ? ex.message : '썸네일 업로드 실패');
+    } finally {
+      setThumbBusy(false);
     }
   }
 
@@ -119,11 +131,7 @@ export default function TeacherCourseForm() {
   return (
     <TeacherWorkspace
       title={titleText}
-      subtitle={
-        isEdit
-          ? '영상 파일만 업로드할 수 있습니다. 업로드된 주소를 커리큘럼의 영상 URL에 연결하세요.'
-          : '저장한 뒤 수정 화면에서 영상 업로드가 가능합니다.'
-      }
+      subtitle="커리큘럼에서 영상 파일을 선택하면 업로드되고 재생 길이가 자동으로 반영됩니다. 썸네일은 이미지 파일로 올려 주세요."
       actions={
         <Button variant="ghost" size="sm" style={{ display: 'inline-flex', gap: 6 }} onClick={() => nav('/teacher/courses')}>
           <ArrowLeft size={16} />
@@ -175,54 +183,41 @@ export default function TeacherCourseForm() {
               required
             />
           </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
-            썸네일 URL (선택)
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Upload size={16} />
+              썸네일 이미지 (선택)
+            </span>
             <input
-              className="ui-input"
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-              placeholder="https://..."
+              type="file"
+              accept="image/*,.jpg,.jpeg,.png,.webp,.gif"
+              disabled={thumbBusy}
+              style={{ fontSize: 14 }}
+              onChange={(e) => void onThumbnailFile(e)}
             />
-          </label>
+            {thumbnailUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  style={{ width: 160, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-neutral-200)' }}
+                />
+                <Button type="button" variant="ghost" size="sm" onClick={() => setThumbnailUrl('')}>
+                  썸네일 제거
+                </Button>
+              </div>
+            ) : null}
+            {thumbErr ? (
+              <div role="alert" style={{ fontSize: 13, color: 'var(--color-error-600)' }}>
+                {thumbErr}
+              </div>
+            ) : null}
+          </div>
 
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>커리큘럼</div>
-            <CurriculumEditor value={curriculum} onChange={setCurriculum} />
+            <CurriculumEditor value={curriculum} onChange={setCurriculum} uploadVideo={uploadVideoForCurriculum} />
           </div>
-
-          {isEdit ? (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14, fontWeight: 600 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Upload size={16} />
-                강의 영상 업로드 (영상만, 최대 약 52MB)
-              </span>
-              <input
-                type="file"
-                accept="video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi,.ogv"
-                style={{ fontSize: 14 }}
-                onChange={(e) => void onUploadFile(e)}
-              />
-            </label>
-          ) : (
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-neutral-500)' }}>
-              영상 업로드는 강의를 저장한 뒤 수정 화면에서 할 수 있습니다.
-            </p>
-          )}
-          {uploadMsg && (
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--color-success-50)',
-                border: '1px solid var(--color-success-100)',
-                color: 'var(--color-success-800)',
-                fontSize: 14,
-                wordBreak: 'break-all',
-              }}
-            >
-              {uploadMsg}
-            </div>
-          )}
           <label
             style={{
               display: 'flex',

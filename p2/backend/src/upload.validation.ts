@@ -57,3 +57,16 @@ export function assertStudentFeedbackUpload(file: Express.Multer.File) {
     '피드백 첨부는 이미지, PDF, 문서, 영상, zip 등만 업로드할 수 있습니다.',
   );
 }
+
+const IMAGE_EXT = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp']);
+
+/** 강의 썸네일·프로필 배너 등 이미지 전용 */
+export function assertTeacherImageUpload(file: Express.Multer.File) {
+  const mime = (file.mimetype || '').toLowerCase();
+  if (mime.startsWith('image/')) return;
+  const ext = extname(file.originalname || '').toLowerCase();
+  if (IMAGE_EXT.has(ext)) return;
+  throw new BadRequestException(
+    '이미지 파일만 업로드할 수 있습니다. (jpg, png, webp, gif 등)',
+  );
+}

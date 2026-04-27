@@ -46,6 +46,10 @@ export class Feedback {
   @Column({ name: 'teacher_feedback', type: 'text', nullable: true })
   teacherFeedback: string | null;
 
+  /** 학생·강사 문답 스레드 JSON: { "messages": [{ "role","body","at" }] } */
+  @Column({ name: 'thread_json', type: 'text', nullable: true })
+  threadJson: string | null;
+
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: FeedbackStatus;
 

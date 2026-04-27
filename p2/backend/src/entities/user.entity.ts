@@ -27,6 +27,14 @@ export class User {
   @Column({ type: 'text', nullable: true })
   bio: string | null;
 
+  /** 강사 공개 프로필 (WYSIWYG HTML) */
+  @Column({ name: 'profile_html', type: 'text', nullable: true })
+  profileHtml: string | null;
+
+  /** 강사 프로필 상단 배너 이미지 URL (로컬 업로드 경로 등) */
+  @Column({ name: 'banner_url', type: 'varchar', length: 500, nullable: true })
+  bannerUrl: string | null;
+
   /** 정산용 (강사) — 공개 프로필 API에는 포함하지 않음 */
   @Column({ name: 'settlement_bank_name', type: 'varchar', length: 60, nullable: true })
   settlementBankName: string | null;

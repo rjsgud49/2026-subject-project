@@ -46,6 +46,8 @@ export type AuthUser = {
   name: string;
   role: UserRole;
   bio?: string | null;
+  profile_html?: string | null;
+  banner_url?: string | null;
   /** 강사 정산계좌 (본인 조회·수정 시에만) */
   settlement_bank?: string | null;
   settlement_account_no?: string | null;
@@ -126,11 +128,37 @@ export const api = {
         { method: 'POST', body: fd },
       );
     },
+    uploadImage: (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return apiRequest<{ url: string; filename: string; stored: string }>('/teacher/upload/image', {
+        method: 'POST',
+        body: fd,
+      });
+    },
+    uploadVideo: (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return apiRequest<{ url: string; filename: string; stored: string }>('/teacher/upload/video', {
+        method: 'POST',
+        body: fd,
+      });
+    },
+    uploadProfileBanner: (file: File) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      return apiRequest<{ url: string; banner_url: string }>('/teacher/profile/banner', {
+        method: 'POST',
+        body: fd,
+      });
+    },
     deleteCourse: (id: number) =>
       apiRequest<{ ok: boolean }>(`/teacher/courses/${id}`, { method: 'DELETE' }),
     updateProfile: (body: {
       name?: string;
       bio?: string;
+      profile_html?: string;
+      banner_url?: string;
       settlement_bank?: string;
       settlement_account_no?: string;
       settlement_holder?: string;
@@ -155,6 +183,7 @@ export const api = {
     uploadStudentFile: (file: File) => {
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('originalFilename', file.name);
       return apiRequest<{ url: string; filename: string; stored: string }>('/feedback/upload', {
         method: 'POST',
         body: fd,
@@ -169,14 +198,26 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(body),
       }),
+    get: (id: number) => apiRequest<FeedbackRow>(`/feedback/${id}`),
+    addMessage: (id: number, body: string) =>
+      apiRequest<FeedbackRow>(`/feedback/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ body }),
+      }),
   },
   teacherFeedback: {
     list: () => apiRequest<FeedbackRow[]>('/teacher/feedback'),
     get: (id: number) => apiRequest<FeedbackRow>(`/teacher/feedback/${id}`),
+    addMessage: (id: number, body: string) =>
+      apiRequest<FeedbackRow>(`/teacher/feedback/${id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ body }),
+      }),
     update: (
       id: number,
       body: Partial<{
         status: 'pending' | 'in_progress' | 'answered';
+        confirmComplete?: boolean;
         teacherQuestion: string;
         teacherFeedback: string;
       }>,
@@ -225,6 +266,8 @@ export type CoursePublic = {
   created_at: string;
   instructor_name?: string | null;
   instructor_bio?: string | null;
+  instructor_profile_html?: string | null;
+  instructor_banner_url?: string | null;
   thumbnail_url?: string | null;
   sections?: unknown[];
   category?: string | null;
@@ -274,6 +317,12 @@ export type EnrollmentRow = {
   } | null;
 };
 
+export type FeedbackThreadMsg = {
+  role: 'student' | 'teacher';
+  body: string;
+  at: string;
+};
+
 export type FeedbackRow = {
   id: number;
   title: string;
@@ -281,6 +330,7 @@ export type FeedbackRow = {
   student_attachments?: FeedbackAttachmentRef[];
   teacher_question: string | null;
   teacher_feedback: string | null;
+  thread?: FeedbackThreadMsg[];
   status: 'pending' | 'in_progress' | 'answered';
   student_id: number;
   teacher_id: number | null;

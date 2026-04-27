@@ -10,6 +10,7 @@ import Accordion from '../components/Accordion';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { formatPrice } from '../utils/format';
+import DOMPurify from 'dompurify';
 
 export default function CourseDetail() {
   const { courseId } = useParams();
@@ -194,9 +195,16 @@ export default function CourseDetail() {
             {c.description || '상세 설명이 준비 중입니다.'}
           </p>
           <h2 style={{ fontSize: 18, fontWeight: 700, margin: '32px 0 12px', color: 'var(--color-neutral-900)' }}>강사 소개</h2>
-          <p style={{ color: 'var(--color-neutral-500)', fontSize: 14, lineHeight: 1.7 }}>
-            {c.instructor_bio || `${c.instructor_name} 강사님의 강의입니다.`}
-          </p>
+          {c.instructor_profile_html ? (
+            <div
+              className="instructor-rich"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.instructor_profile_html) }}
+            />
+          ) : (
+            <p style={{ color: 'var(--color-neutral-500)', fontSize: 14, lineHeight: 1.7 }}>
+              {c.instructor_bio || `${c.instructor_name} 강사님의 강의입니다.`}
+            </p>
+          )}
         </div>
       )}
 

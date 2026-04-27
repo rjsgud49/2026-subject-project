@@ -1,6 +1,8 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, Upload } from 'lucide-react';
 import Button from './Button';
 import { formatDuration } from '../utils/format';
+import { getVideoDurationSeconds } from '../utils/videoMeta';
 
 export type CurriculumVideo = {
   id: number;
@@ -16,7 +18,7 @@ export function defaultCurriculum(): CurriculumData {
     sections: [
       {
         title: '1강 · 시작하기',
-        videos: [{ id: 1, title: '강의 소개', duration: 300, video_url: '' }],
+        videos: [{ id: 1, title: '강의 소개', duration: 0, video_url: '' }],
       },
     ],
   };
@@ -64,10 +66,15 @@ function nextVideoId(data: CurriculumData): number {
 export default function CurriculumEditor({
   value,
   onChange,
+  uploadVideo,
 }: {
   value: CurriculumData;
   onChange: (v: CurriculumData) => void;
+  uploadVideo: (file: File) => Promise<{ url: string }>;
 }) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [busyErr, setBusyErr] = useState<string | null>(null);
+
   const setSections = (sections: CurriculumSection[]) => onChange({ sections });
 
   const addSection = () => {
@@ -110,10 +117,33 @@ export default function CurriculumEditor({
     patchSection(si, { videos });
   };
 
+  const onPickVideoFile = async (si: number, vi: number, file: File | undefined) => {
+    const key = `${si}-${vi}`;
+    setBusyErr(null);
+    if (!file) return;
+    setBusyKey(key);
+    try {
+      const [durationSec, { url }] = await Promise.all([
+        getVideoDurationSeconds(file),
+        uploadVideo(file),
+      ]);
+      const baseTitle = file.name.replace(/\.[^.]+$/, '');
+      patchVideo(si, vi, {
+        video_url: url,
+        duration: durationSec,
+        title: baseTitle || value.sections[si]?.videos[vi]?.title || '영상',
+      });
+    } catch (e: unknown) {
+      setBusyErr(e instanceof Error ? e.message : '업로드 실패');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-600)' }}>
-        섹션(챕터)과 각 영상의 제목·재생 URL·길이를 입력하세요. 강의 수정 화면에서 영상을 업로드하면 나온 주소를 그대로 붙여 넣을 수 있습니다.
+        섹션(챕터)과 각 영상 제목을 입력하고, 영상은 파일로 업로드하세요. 재생 길이는 업로드된 파일에서 자동으로 설정됩니다.
       </p>
 
       {value.sections.map((section, si) => (
@@ -156,98 +186,102 @@ export default function CurriculumEditor({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {section.videos.map((video, vi) => (
-              <div
-                key={`${si}-${vi}`}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-neutral-200)',
-                  background: 'var(--color-neutral-0)',
-                  display: 'grid',
-                  gap: 10,
-                  gridTemplateColumns: '1fr 1fr',
-                }}
-              >
-                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600 }}>
-                  영상 제목
-                  <input
-                    className="ui-input"
-                    style={{ height: 36 }}
-                    value={video.title}
-                    onChange={(e) => patchVideo(si, vi, { title: e.target.value })}
-                  />
-                </label>
-                <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600 }}>
-                  영상 URL (업로드 후 복사한 주소 또는 외부 링크)
-                  <input
-                    className="ui-input"
-                    style={{ height: 36 }}
-                    value={video.video_url}
-                    onChange={(e) => patchVideo(si, vi, { video_url: e.target.value })}
-                    placeholder="/api/v1/files/... 또는 https://..."
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600 }}>
-                  길이 (분)
-                  <input
-                    className="ui-input"
-                    style={{ height: 36 }}
-                    type="number"
-                    min={0}
-                    value={Math.floor(video.duration / 60)}
-                    onChange={(e) => {
-                      const min = Number(e.target.value) || 0;
-                      const sec = video.duration % 60;
-                      patchVideo(si, vi, { duration: min * 60 + sec });
-                    }}
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600 }}>
-                  길이 (초)
-                  <input
-                    className="ui-input"
-                    style={{ height: 36 }}
-                    type="number"
-                    min={0}
-                    max={59}
-                    value={video.duration % 60}
-                    onChange={(e) => {
-                      const sec = Math.min(59, Math.max(0, Number(e.target.value) || 0));
-                      const min = Math.floor(video.duration / 60);
-                      patchVideo(si, vi, { duration: min * 60 + sec });
-                    }}
-                  />
-                </label>
+            {section.videos.map((video, vi) => {
+              const key = `${si}-${vi}`;
+              const busy = busyKey === key;
+              return (
                 <div
+                  key={`${si}-${vi}`}
                   style={{
-                    gridColumn: '1 / -1',
+                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-neutral-200)',
+                    background: 'var(--color-neutral-0)',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                    flexWrap: 'wrap',
+                    flexDirection: 'column',
+                    gap: 10,
                   }}
                 >
-                  <span style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>
-                    합계 재생 길이: <strong>{formatDuration(video.duration)}</strong>
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeVideo(si, vi)}
-                    disabled={section.videos.length <= 1}
-                    style={{ color: 'var(--color-error-600)' }}
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 600 }}>
+                    영상 제목
+                    <input
+                      className="ui-input"
+                      style={{ height: 36 }}
+                      value={video.title}
+                      onChange={(e) => patchVideo(si, vi, { title: e.target.value })}
+                    />
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <Upload size={14} />
+                      영상 파일
+                    </span>
+                    <input
+                      type="file"
+                      accept="video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi,.ogv"
+                      disabled={busy}
+                      style={{ fontSize: 13 }}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = '';
+                        void onPickVideoFile(si, vi, f);
+                      }}
+                    />
+                    {video.video_url ? (
+                      <span style={{ fontSize: 12, color: 'var(--color-neutral-500)', wordBreak: 'break-all' }}>
+                        등록됨: {video.video_url}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>파일을 선택하면 업로드·길이 반영이 진행됩니다.</span>
+                    )}
+                    {busy && <span style={{ fontSize: 12, color: 'var(--color-primary-600)' }}>업로드 중…</span>}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                    }}
                   >
-                    영상 삭제
-                  </Button>
+                    <span style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>
+                      재생 길이: <strong>{formatDuration(video.duration)}</strong>
+                      {video.duration === 0 && video.video_url && ' (메타를 읽지 못한 경우 0으로 표시될 수 있습니다)'}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeVideo(si, vi)}
+                      disabled={section.videos.length <= 1}
+                      style={{ color: 'var(--color-error-600)' }}
+                    >
+                      영상 삭제
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       ))}
+
+      {busyErr && (
+        <div
+          role="alert"
+          style={{
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-error-50)',
+            border: '1px solid var(--color-error-100)',
+            color: 'var(--color-error-700)',
+            fontSize: 13,
+          }}
+        >
+          {busyErr}
+        </div>
+      )}
 
       <div>
         <Button type="button" variant="secondary" size="sm" onClick={addSection} style={{ display: 'inline-flex', gap: 6 }}>

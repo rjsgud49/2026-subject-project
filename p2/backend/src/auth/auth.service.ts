@@ -84,6 +84,8 @@ export class AuthService {
       name: u.name,
       role: u.role,
       bio: u.bio,
+      profile_html: u.profileHtml ?? null,
+      banner_url: u.bannerUrl ?? null,
       settlement_bank: u.settlementBankName ?? null,
       settlement_account_no: u.settlementAccountNo ?? null,
       settlement_holder: u.settlementHolderName ?? null,
