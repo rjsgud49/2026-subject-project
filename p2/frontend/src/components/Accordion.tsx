@@ -45,7 +45,10 @@ export default function Accordion({ sections = [] }: { sections?: any[] }) {
             <ul style={{ margin: 0, padding: '0 20px 16px 36px', listStyle: 'disc' }}>
               {(s.videos || []).map((v: any) => (
                 <li key={v.id} style={{ padding: '8px 0', color: 'var(--color-muted)' }}>
-                  {v.title} <span style={{ fontSize: 13 }}>({formatDuration(v.duration_seconds)})</span>
+                  {v.title}{' '}
+                  <span style={{ fontSize: 13 }}>
+                    ({formatDuration(v.duration_seconds ?? v.duration)})
+                  </span>
                 </li>
               ))}
             </ul>

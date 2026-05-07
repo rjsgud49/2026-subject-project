@@ -1,43 +1,95 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
-import { fetchCart, removeFromCartThunk } from '../features/cartSlice';
+import {
+  fetchCart,
+  removeFromCartThunk,
+  clearCartMessage,
+} from '../features/cartSlice';
 import { enrollManyThunk, fetchEnrollments, setCheckoutCourseIds } from '../features/enrollmentSlice';
 import Button from '../components/Button';
 import { formatPrice } from '../utils/format';
-import { Lock, ShoppingCart } from 'lucide-react';
+import { Lock, ShoppingCart, Trash2 } from 'lucide-react';
 
 export default function Cart() {
   const dispatch = useAppDispatch();
   const nav = useNavigate();
-  const { items } = useAppSelector((s) => s.cart);
+  const { items, status, error, lastAction } = useAppSelector((s) => s.cart);
   const user = useAppSelector((s) => s.user.user);
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
+  const [removing, setRemoving] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
-  useEffect(() => { dispatch(fetchCart()); }, [dispatch]);
-  useEffect(() => { setSelected(new Set((items || []).map((i: any) => i.course_id))); }, [items]);
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  useEffect(() => {
+    setSelected(new Set((items || []).map((i: { course_id: number }) => Number(i.course_id))));
+  }, [items]);
+
+  useEffect(() => {
+    if (lastAction?.type === 'error') {
+      const t = window.setTimeout(() => dispatch(clearCartMessage()), 5000);
+      return () => window.clearTimeout(t);
+    }
+    return undefined;
+  }, [lastAction, dispatch]);
 
   const toggle = (id: number) => {
     setSelected((prev) => {
       const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
       return n;
     });
   };
 
   const total = (items || [])
-    .filter((i: any) => selected.has(i.course_id))
-    .reduce((s: number, i: any) => s + Number(i.price || 0), 0);
+    .filter((i: { course_id: number }) => selected.has(Number(i.course_id)))
+    .reduce((s: number, i: { price?: number }) => s + Number(i.price || 0), 0);
 
   const checkout = async () => {
     const ids = [...selected];
-    if (!ids.length) { window.alert('선택한 강의가 없습니다.'); return; }
-    const r = await dispatch(enrollManyThunk(ids as any));
-    if (r.error) { window.alert(r.error.message); return; }
-    dispatch(setCheckoutCourseIds(ids as any));
-    dispatch(fetchCart());
-    dispatch(fetchEnrollments());
-    nav('/checkout/complete');
+    if (!ids.length) {
+      window.alert('선택한 강의가 없습니다.');
+      return;
+    }
+    setCheckingOut(true);
+    try {
+      const r = await dispatch(enrollManyThunk(ids as number[]));
+      if (r.error) {
+        window.alert(r.error.message);
+        return;
+      }
+      dispatch(setCheckoutCourseIds(ids as number[]));
+      dispatch(fetchEnrollments());
+      dispatch(fetchCart());
+      nav('/checkout/complete');
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
+  const selectAll = () => {
+    setSelected(new Set((items || []).map((i: { course_id: number }) => Number(i.course_id))));
+  };
+
+  const deselectAll = () => setSelected(new Set());
+
+  const removeSelected = async () => {
+    const ids = [...selected];
+    if (!ids.length) return;
+    setRemoving(true);
+    try {
+      for (const id of ids) {
+        await dispatch(removeFromCartThunk(id)).unwrap();
+      }
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : '일부 항목을 삭제하지 못했습니다.');
+    } finally {
+      setRemoving(false);
+    }
   };
 
   if (!user) {
@@ -74,14 +126,67 @@ export default function Cart() {
     );
   }
 
+  const loading = status === 'loading';
+  const empty = !loading && (!items?.length);
+
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 24px' }}>
-      <div style={{ marginBottom: 28 }}>
+    <div style={{ maxWidth: 880, margin: '0 auto', padding: '40px 24px' }}>
+      <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>장바구니</h1>
-        <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 14 }}>선택한 강의를 한 번에 수강신청할 수 있습니다.</p>
+        <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 14 }}>
+          담아둔 강의를 선택한 뒤 한 번에 수강신청할 수 있습니다. (실결제 없음 · 데모)
+        </p>
       </div>
 
-      {!items?.length ? (
+      {error && status === 'failed' && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-error-50)',
+            border: '1px solid var(--color-error-100)',
+            color: 'var(--color-error-700)',
+            fontSize: 14,
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: 12,
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>{error}</span>
+          <Button size="sm" variant="secondary" onClick={() => void dispatch(fetchCart())}>
+            다시 시도
+          </Button>
+        </div>
+      )}
+
+      {lastAction?.type === 'error' && (
+        <div
+          role="status"
+          style={{
+            marginBottom: 12,
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-warning-50)',
+            border: '1px solid var(--color-warning-100)',
+            color: 'var(--color-warning-800)',
+            fontSize: 13,
+          }}
+        >
+          {lastAction.msg}
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--color-neutral-500)', fontSize: 14 }}>
+          장바구니를 불러오는 중…
+        </div>
+      )}
+
+      {!loading && empty && (
         <div style={{ textAlign: 'center', padding: '72px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <ShoppingCart size={48} strokeWidth={1.2} color="var(--color-neutral-300)" />
@@ -90,72 +195,110 @@ export default function Cart() {
             장바구니가 비어 있어요.
           </h3>
           <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: '0 0 24px' }}>
-            마음에 드는 강의를 담아보세요.
+            관심 있는 강의를 담아 보세요.
           </p>
           <Link to="/courses"><Button variant="secondary">강의 둘러보기</Button></Link>
         </div>
-      ) : (
-        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* 강의 목록 */}
-          <div style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {(items || []).map((i: any) => (
-              <div
-                key={i.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
-                  background: selected.has(i.course_id) ? 'var(--color-neutral-0)' : 'var(--color-neutral-50)',
-                  border: `1px solid ${selected.has(i.course_id) ? 'var(--color-neutral-200)' : 'var(--color-neutral-200)'}`,
-                  borderRadius: 'var(--radius-lg)',
-                  boxShadow: selected.has(i.course_id) ? 'var(--shadow-sm)' : 'none',
-                  transition: 'background 150ms',
-                }}
+      )}
+
+      {!loading && !empty && (
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 300 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <Button size="sm" variant="secondary" onClick={selectAll}>
+                전체 선택
+              </Button>
+              <Button size="sm" variant="secondary" onClick={deselectAll}>
+                전체 해제
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => void removeSelected()}
+                disabled={!selected.size || removing}
               >
-                <input
-                  type="checkbox"
-                  checked={selected.has(i.course_id)}
-                  onChange={() => toggle(i.course_id)}
-                  style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--color-primary-500)', flexShrink: 0 }}
-                />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <Link
-                    to={`/courses/${i.course_id}`}
-                    style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-neutral-800)', display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
-                  >
-                    {i.course_title}
-                  </Link>
-                  <p style={{ margin: '3px 0 0', fontSize: 14, fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-                    {Number(i.price) === 0 ? <span style={{ color: 'var(--color-success-600)' }}>무료</span> : formatPrice(i.price)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => dispatch(removeFromCartThunk(i.course_id))}
-                  aria-label="강의 삭제"
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Trash2 size={14} />
+                  선택 삭제
+                </span>
+              </Button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {(items || []).map((i: { id: number; course_id: number; course_title: string; price: number }) => (
+                <div
+                  key={i.id}
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 28, height: 28, borderRadius: 6,
-                    border: 'none', background: 'transparent',
-                    color: 'var(--color-neutral-400)', cursor: 'pointer', fontSize: 16,
-                    transition: 'background 150ms, color 150ms', fontFamily: 'inherit',
-                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '14px 16px',
+                    background: selected.has(i.course_id) ? 'var(--color-neutral-0)' : 'var(--color-neutral-50)',
+                    border: '1px solid var(--color-neutral-200)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: selected.has(i.course_id) ? 'var(--shadow-sm)' : 'none',
+                    transition: 'background 150ms',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-error-50)'; e.currentTarget.style.color = 'var(--color-error-600)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-neutral-400)'; }}
                 >
-                  ✕
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="checkbox"
+                    checked={selected.has(i.course_id)}
+                    onChange={() => toggle(i.course_id)}
+                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--color-primary-500)', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Link
+                      to={`/courses/${i.course_id}`}
+                      style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-neutral-800)', display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}
+                    >
+                      {i.course_title}
+                    </Link>
+                    <p style={{ margin: '3px 0 0', fontSize: 14, fontWeight: 700, color: 'var(--color-neutral-900)' }}>
+                      {Number(i.price) === 0 ? <span style={{ color: 'var(--color-success-600)' }}>무료</span> : formatPrice(i.price)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void dispatch(removeFromCartThunk(i.course_id))}
+                    aria-label="강의 삭제"
+                    disabled={removing}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 32, height: 32, borderRadius: 8,
+                      border: 'none', background: 'transparent',
+                      color: 'var(--color-neutral-400)', cursor: removing ? 'wait' : 'pointer', fontSize: 16,
+                      transition: 'background 150ms, color 150ms', fontFamily: 'inherit',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!removing) {
+                        e.currentTarget.style.background = 'var(--color-error-50)';
+                        e.currentTarget.style.color = 'var(--color-error-600)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--color-neutral-400)';
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* 결제 요약 */}
           <div
             style={{
-              width: 260,
-              minWidth: 220,
+              width: 280,
+              minWidth: 240,
               position: 'sticky',
               top: 'calc(var(--nav-h) + 16px)',
               padding: '20px',
@@ -184,12 +327,16 @@ export default function Cart() {
               <span>{total === 0 && selected.size ? '무료' : formatPrice(total)}</span>
             </div>
             <Button
-              onClick={checkout}
-              disabled={!selected.size}
+              onClick={() => void checkout()}
+              disabled={!selected.size || checkingOut}
+              loading={checkingOut}
               style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
             >
               수강신청하기
             </Button>
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--color-neutral-400)', lineHeight: 1.5 }}>
+              이미 수강 중이거나 비공개 강의는 신청 시 오류가 날 수 있습니다. 해당 항목은 장바구니에서 제거해 주세요.
+            </p>
           </div>
         </div>
       )}

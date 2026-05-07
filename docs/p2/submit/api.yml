@@ -1,0 +1,413 @@
+openapi: 3.0.3
+info:
+  title: P2 LMS API
+  description: |
+    역할 기반 LMS — NestJS 구현 기준 OpenAPI 스케치.
+    Base path `/api/v1`.
+    로그인·공개 강의·일부 Q&A·파일 GET은 비인증 가능.
+    cart, enrollments, progress, auth/me, teacher/*, admin/*, feedback 작성 등은 `Authorization: Bearer` 필요(컨트롤러 `@UseGuards` 기준).
+  version: "2.0.0"
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: auth
+  - name: courses
+  - name: cart
+  - name: enrollments
+  - name: progress
+  - name: qna
+  - name: admin
+  - name: teacher
+  - name: feedback
+  - name: files
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items: { type: string }
+            - type: object
+    CoursePublic:
+      type: object
+      description: 공개 강의(목록/상세 공통 필드 일부)
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        price: { type: integer }
+        is_published: { type: boolean }
+        view_count: { type: integer }
+        thumbnail_url: { type: string, nullable: true }
+        sections:
+          type: array
+          items: { type: object, additionalProperties: true }
+    EnrollmentRow:
+      type: object
+      properties:
+        id: { type: integer }
+        course_id: { type: integer }
+        course_title: { type: string, nullable: true }
+        thumbnail_url: { type: string, nullable: true }
+        progress_percent: { type: integer }
+        status: { type: string, enum: [active, completed] }
+        last_video_id: { type: integer, nullable: true }
+        enrolled_at: { type: string, format: date-time }
+    VideoProgress:
+      type: object
+      properties:
+        video_id: { type: integer }
+        last_second: { type: integer }
+        completed: { type: boolean }
+
+paths:
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: 로그인
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: access_token + user
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: 회원가입
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name, password, role]
+              properties:
+                email: { type: string }
+                name: { type: string }
+                password: { type: string }
+                role: { type: string, enum: [admin, teacher, student] }
+      responses:
+        "201": { description: 생성 }
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: 현재 사용자
+      responses:
+        "200": { description: 사용자 객체 }
+
+  /courses:
+    get:
+      tags: [courses]
+      summary: 공개 강의 목록
+      security: []
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: size
+          schema: { type: integer, default: 12 }
+      responses:
+        "200":
+          description: items, total, page, size
+  /courses/{id}:
+    get:
+      tags: [courses]
+      summary: 공개 강의 상세
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoursePublic" }
+
+  /cart:
+    get:
+      tags: [cart]
+      summary: 장바구니 목록
+      responses:
+        "200": { description: 배열 }
+    post:
+      tags: [cart]
+      summary: 담기
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id]
+              properties:
+                course_id: { type: integer }
+      responses:
+        "201": { description: 성공 }
+        "409": { description: 중복 }
+
+  /cart/{courseId}:
+    delete:
+      tags: [cart]
+      summary: 제거
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: 삭제됨 }
+
+  /enrollments:
+    get:
+      tags: [enrollments]
+      summary: 내 수강 목록
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EnrollmentRow" }
+    post:
+      tags: [enrollments]
+      summary: 수강신청
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [course_id]
+              properties:
+                course_id: { type: integer }
+      responses:
+        "201": { description: 생성 }
+
+  /enrollments/{enrollmentId}/progress:
+    get:
+      tags: [progress]
+      summary: 영상 진도 목록
+      parameters:
+        - in: path
+          name: enrollmentId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VideoProgress" }
+
+  /enrollments/{enrollmentId}/videos/{videoId}/progress:
+    put:
+      tags: [progress]
+      summary: 진도 저장
+      parameters:
+        - in: path
+          name: enrollmentId
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: videoId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [last_second, completed]
+              properties:
+                last_second: { type: integer, minimum: 0 }
+                completed: { type: boolean }
+      responses:
+        "200": { description: ok }
+
+  /enrollments/{id}:
+    delete:
+      tags: [enrollments]
+      summary: 수강 취소
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: ok }
+
+  /courses/{courseId}/questions:
+    get:
+      tags: [qna]
+      summary: 질문 목록
+      security: []
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer }
+        - in: query
+          name: size
+          schema: { type: integer }
+      responses:
+        "200": { description: items, total }
+    post:
+      tags: [qna]
+      summary: 질문 등록
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, body]
+              properties:
+                title: { type: string }
+                body: { type: string }
+                is_private: { type: boolean }
+      responses:
+        "201": { description: 생성 }
+
+  /questions/{questionId}:
+    get:
+      tags: [qna]
+      summary: 질문 상세
+      security: []
+      parameters:
+        - in: path
+          name: questionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: question + answers }
+    put:
+      tags: [qna]
+      summary: 질문 수정
+      parameters:
+        - in: path
+          name: questionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: ok }
+    delete:
+      tags: [qna]
+      summary: 질문 삭제
+      parameters:
+        - in: path
+          name: questionId
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: 삭제 }
+
+  /questions/{questionId}/answers:
+    post:
+      tags: [qna]
+      summary: 답변 등록
+      parameters:
+        - in: path
+          name: questionId
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string }
+      responses:
+        "201": { description: 생성 }
+
+  /admin/stats:
+    get:
+      tags: [admin]
+      summary: 관리자 통계
+      responses:
+        "200": { description: 통계 객체 }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: 사용자 목록
+      responses:
+        "200": { description: 배열 }
+
+  /admin/courses:
+    get:
+      tags: [admin]
+      summary: 전체 강의
+      responses:
+        "200": { description: 배열 }
+
+  /teacher/dashboard:
+    get:
+      tags: [teacher]
+      summary: 강사 대시보드
+      responses:
+        "200": { description: 요약 }
+
+  /teacher/courses:
+    get:
+      tags: [teacher]
+      summary: 내 강의 목록
+      responses:
+        "200": { description: 배열 }
+    post:
+      tags: [teacher]
+      summary: 강의 생성
+      responses:
+        "201": { description: 생성 }
+
+  /feedback/mine:
+    get:
+      tags: [feedback]
+      summary: 내 피드백 목록
+      responses:
+        "200": { description: 배열 }
+
+  /files/{name}:
+    get:
+      tags: [files]
+      summary: 업로드 파일 스트리밍
+      security: []
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: 바이너리 }

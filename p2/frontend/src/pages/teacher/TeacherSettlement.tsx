@@ -4,7 +4,7 @@ import TeacherWorkspace from '../../components/TeacherWorkspace';
 import Button from '../../components/Button';
 import { useAppDispatch } from '../../hooks/useRedux';
 import { setUser } from '../../features/userSlice';
-import { api } from '../../lib/api';
+import { api, type TeacherRevenueLedgerResponse } from '../../lib/api';
 
 export default function TeacherSettlement() {
   const dispatch = useAppDispatch();
@@ -15,6 +15,9 @@ export default function TeacherSettlement() {
   const [ok, setOk] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [ledger, setLedger] = useState<TeacherRevenueLedgerResponse | null>(null);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -37,6 +40,25 @@ export default function TeacherSettlement() {
     };
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    setLedgerLoading(true);
+    api.teacher
+      .settlementLedger(ledgerPage, 10)
+      .then((data) => {
+        if (alive) setLedger(data);
+      })
+      .catch(() => {
+        if (alive) setLedger(null);
+      })
+      .finally(() => {
+        if (alive) setLedgerLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [ledgerPage]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr('');
@@ -54,6 +76,7 @@ export default function TeacherSettlement() {
       setAccountNo(me.settlement_account_no ?? '');
       setHolder(me.settlement_holder ?? '');
       setOk('정산 계좌 정보가 저장되었습니다.');
+      setLedgerPage(1);
     } catch (ex: unknown) {
       setErr(ex instanceof Error ? ex.message : '저장 실패');
     } finally {
@@ -63,8 +86,8 @@ export default function TeacherSettlement() {
 
   return (
     <TeacherWorkspace
-      title="정산 계좌"
-      subtitle="수익 정산 시 입금될 계좌입니다. 수강생에게 공개되지 않으며, 운영팀이 정산 절차에만 사용합니다."
+      title="정산"
+      subtitle="수익 원장은 수강 신청 시점 강의 가격 기준으로 DB에 기록됩니다. 아래 계좌는 정산 입금용이며 수강생에게 공개되지 않습니다."
     >
       {initialLoading ? (
         <div className="skeleton" style={{ maxWidth: 520, height: 220, borderRadius: 12 }} />
@@ -161,6 +184,74 @@ export default function TeacherSettlement() {
           </Button>
         </form>
       )}
+
+      <section style={{ marginTop: 40, maxWidth: 960 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>수익 원장</h2>
+        <p style={{ fontSize: 14, color: 'var(--color-neutral-600)', marginBottom: 16 }}>
+          수강 1건당 한 줄이며, 당시 강의 가격·수수료·강사 정산액이 저장됩니다.
+        </p>
+        {ledgerLoading ? (
+          <div className="skeleton" style={{ height: 200, borderRadius: 12 }} />
+        ) : !ledger?.items?.length ? (
+          <p style={{ color: 'var(--color-neutral-500)', fontSize: 14 }}>아직 수익 원장이 없습니다. 수강 신청이 발생하면 표시됩니다.</p>
+        ) : (
+          <>
+            <div style={{ overflowX: 'auto', border: '1px solid var(--color-neutral-200)', borderRadius: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead>
+                  <tr style={{ background: 'var(--color-neutral-50)', textAlign: 'left' }}>
+                    <th style={{ padding: '10px 12px' }}>일시</th>
+                    <th style={{ padding: '10px 12px' }}>강의</th>
+                    <th style={{ padding: '10px 12px' }}>당시 가격</th>
+                    <th style={{ padding: '10px 12px' }}>매출</th>
+                    <th style={{ padding: '10px 12px' }}>수수료</th>
+                    <th style={{ padding: '10px 12px' }}>정산(예상)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.items.map((row) => (
+                    <tr key={row.id} style={{ borderTop: '1px solid var(--color-neutral-100)' }}>
+                      <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                        {new Date(row.enrolled_at).toLocaleString('ko-KR')}
+                      </td>
+                      <td style={{ padding: '10px 12px' }}>{row.course_title ?? `강의 #${row.course_id}`}</td>
+                      <td style={{ padding: '10px 12px' }}>{Number(row.price_snapshot).toLocaleString('ko-KR')}원</td>
+                      <td style={{ padding: '10px 12px' }}>{Number(row.gross_amount).toLocaleString('ko-KR')}원</td>
+                      <td style={{ padding: '10px 12px' }}>{Number(row.platform_fee).toLocaleString('ko-KR')}원</td>
+                      <td style={{ padding: '10px 12px', fontWeight: 600 }}>
+                        {Number(row.net_amount).toLocaleString('ko-KR')}원
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, alignItems: 'center' }}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={ledgerPage <= 1}
+                onClick={() => setLedgerPage((p) => Math.max(1, p - 1))}
+              >
+                이전
+              </Button>
+              <span style={{ fontSize: 13, color: 'var(--color-neutral-600)' }}>
+                {ledger.page} / {Math.max(1, Math.ceil(ledger.total / ledger.size))} 페이지 (총 {ledger.total}건)
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={ledgerPage * ledger.size >= ledger.total}
+                onClick={() => setLedgerPage((p) => p + 1)}
+              >
+                다음
+              </Button>
+            </div>
+          </>
+        )}
+      </section>
     </TeacherWorkspace>
   );
 }

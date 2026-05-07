@@ -30,7 +30,13 @@ export default function VideoPlayerPage() {
     if (cid) dispatch(fetchQuestions(Number(cid)) as any);
   }, [enrollment?.course?.id, dispatch]);
 
-  const progressMap = Object.fromEntries((progress || []).map((p: any) => [p.video_id, p]));
+  const progressMap = useMemo(
+    () =>
+      Object.fromEntries(
+        (progress || []).map((p: any) => [Number(p.video_id), p]),
+      ),
+    [progress],
+  );
 
   const allVideos = useMemo(() => {
     const rows: any[] = [];
@@ -58,13 +64,24 @@ export default function VideoPlayerPage() {
     }, 500);
   };
 
-  const startSec = currentVideo?.id ? progressMap[currentVideo.id]?.last_second ?? 0 : 0;
+  const currentVid = currentVideo?.id != null ? Number(currentVideo.id) : null;
+  const startSec =
+    currentVid != null && Number.isFinite(currentVid)
+      ? progressMap[currentVid]?.last_second ?? 0
+      : 0;
 
   const currentIdx = useMemo(
-    () => allVideos.findIndex(({ video }) => video.id === currentVideo?.id),
-    [allVideos, currentVideo?.id]
+    () =>
+      allVideos.findIndex(
+        ({ video }) => Number(video.id) === Number(currentVideo?.id),
+      ),
+    [allVideos, currentVideo?.id],
   );
   const nextVideo = currentIdx >= 0 && currentIdx < allVideos.length - 1 ? allVideos[currentIdx + 1] : null;
+
+  const videoSrc =
+    currentVideo?.video_url ??
+    (currentVideo as { videoUrl?: string } | null)?.videoUrl;
 
   const handleEnded = () => {
     if (nextVideo) setShowNextModal(true);
@@ -125,7 +142,7 @@ export default function VideoPlayerPage() {
         <div>
           <VideoPlayer
             key={currentVideo?.id || 'x'}
-            src={currentVideo?.video_url}
+            src={videoSrc}
             playbackRate={playbackRate}
             onPlaybackRateChange={(r: number) => dispatch(setPlaybackRate(r))}
             onTimeUpdate={onTimeUpdate}
@@ -150,14 +167,20 @@ export default function VideoPlayerPage() {
                     width: '100%',
                     textAlign: 'left',
                     padding: '12px 14px',
-                    border: currentVideo?.id === video.id ? '2px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    border:
+                      Number(currentVideo?.id) === Number(video.id)
+                        ? '2px solid var(--color-accent)'
+                        : '1px solid var(--color-border)',
                     borderRadius: 8,
-                    background: currentVideo?.id === video.id ? '#eff6ff' : '#fff',
+                    background:
+                      Number(currentVideo?.id) === Number(video.id)
+                        ? '#eff6ff'
+                        : '#fff',
                     cursor: 'pointer',
                     fontSize: 14,
                   }}
                 >
-                  {progressMap[video.id]?.completed && '✓ '}
+                  {progressMap[Number(video.id)]?.completed && '✓ '}
                   {sectionTitle} · {video.title}{' '}
                   <span style={{ color: 'var(--color-muted)' }}>({formatDuration(video.duration_seconds)})</span>
                 </button>
@@ -194,13 +217,19 @@ export default function VideoPlayerPage() {
                           textAlign: 'left',
                           padding: '10px 12px',
                           borderRadius: 10,
-                          border: currentVideo?.id === v.id ? '2px solid var(--color-brand)' : '1px solid var(--color-border)',
-                          background: currentVideo?.id === v.id ? 'var(--color-brand-soft)' : '#fff',
+                          border:
+                            Number(currentVideo?.id) === Number(v.id)
+                              ? '2px solid var(--color-brand)'
+                              : '1px solid var(--color-border)',
+                          background:
+                            Number(currentVideo?.id) === Number(v.id)
+                              ? 'var(--color-brand-soft)'
+                              : '#fff',
                           cursor: 'pointer',
                           fontSize: 14,
                         }}
                       >
-                        {progressMap[v.id]?.completed && '✓ '}
+                        {progressMap[Number(v.id)]?.completed && '✓ '}
                         {v.title}{' '}
                         <span style={{ color: 'var(--color-muted)' }}>({formatDuration(v.duration_seconds)})</span>
                       </button>

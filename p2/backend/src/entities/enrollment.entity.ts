@@ -4,11 +4,13 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Unique,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Course } from './course.entity';
+import { EnrollmentVideoProgress } from './enrollment-video-progress.entity';
 
 @Entity('p2_enrollments')
 @Unique(['userId', 'courseId'])
@@ -32,4 +34,11 @@ export class Enrollment {
 
   @CreateDateColumn({ name: 'enrolled_at' })
   enrolledAt: Date;
+
+  /** 마지막으로 시청한 커리큘럼 영상 id (이어보기) */
+  @Column({ name: 'last_video_id', type: 'bigint', nullable: true })
+  lastVideoId: number | null;
+
+  @OneToMany(() => EnrollmentVideoProgress, (p) => p.enrollment)
+  videoProgress: EnrollmentVideoProgress[];
 }

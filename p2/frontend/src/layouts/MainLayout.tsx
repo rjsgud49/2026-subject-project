@@ -1,7 +1,8 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { logout } from '../features/userSlice';
+import { fetchCart } from '../features/cartSlice';
 import { setToken } from '../services/api';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
@@ -32,6 +33,14 @@ export default function MainLayout() {
 
   const { tickets } = useFeedbackTickets(!!user && !isTeacher);
   const totalTickets = user && !isTeacher ? tickets.doc + tickets.video + tickets.premium : 0;
+
+  const cartItems = useAppSelector((s) => s.cart.items);
+  const cartCount =
+    user?.role === 'student' && Array.isArray(cartItems) ? cartItems.length : 0;
+
+  useEffect(() => {
+    if (user?.role === 'student') dispatch(fetchCart());
+  }, [user?.id, user?.role, dispatch]);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -150,6 +159,27 @@ export default function MainLayout() {
                 >
                   <Icon size={15} />
                   {label}
+                  {to === '/cart' && cartCount > 0 && (
+                    <span
+                      style={{
+                        marginLeft: 2,
+                        background: 'var(--color-primary-500)',
+                        color: '#fff',
+                        borderRadius: 'var(--radius-full)',
+                        padding: '0 6px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        lineHeight: '18px',
+                        height: 18,
+                        minWidth: 18,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {cartCount > 99 ? '99+' : cartCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

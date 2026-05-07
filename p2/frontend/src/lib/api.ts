@@ -92,6 +92,10 @@ export const api = {
   },
   teacher: {
     dashboard: () => apiRequest<TeacherDashboard>('/teacher/dashboard'),
+    settlementLedger: (page = 1, size = 20) =>
+      apiRequest<TeacherRevenueLedgerResponse>(
+        `/teacher/settlement/ledger?page=${page}&size=${size}`,
+      ),
     courses: () => apiRequest<TeacherCourse[]>('/teacher/courses'),
     createCourse: (body: {
       title: string;
@@ -231,6 +235,25 @@ export const api = {
 
 export type FeedbackAttachmentRef = { url: string; filename: string };
 
+export type TeacherRevenueLedgerItem = {
+  id: number;
+  course_id: number;
+  course_title: string | null;
+  enrollment_id: number;
+  price_snapshot: number;
+  gross_amount: number;
+  platform_fee: number;
+  net_amount: number;
+  enrolled_at: string;
+};
+
+export type TeacherRevenueLedgerResponse = {
+  page: number;
+  size: number;
+  total: number;
+  items: TeacherRevenueLedgerItem[];
+};
+
 export type TeacherDashboardCourseRow = {
   id: number;
   title: string;
@@ -245,6 +268,8 @@ export type TeacherDashboardCourseRow = {
 
 export type TeacherDashboard = {
   platform_fee_rate: number;
+  /** 수익 집계가 DB 원장 기준인지 표시 */
+  revenue_source?: 'ledger';
   totals: {
     gross_revenue: number;
     platform_fee: number;

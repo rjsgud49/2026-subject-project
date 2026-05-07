@@ -1,6 +1,6 @@
 # P2 — 역할 분리 LMS (관리자 · 강사 · 학생) + JWT 인증
 
-README의 **project2** 범위: 역할 분리와 인증 전체(백엔드 + 프론트)를 구현했습니다. P1과 동시에 띄우기 위해 **백엔드 3010**, **프론트 5174**를 사용합니다.
+README의 **project2** 범위: 역할 분리와 인증 전체(백엔드 + 프론트)를 구현했습니다. **백엔드 포트는 `p2/backend/.env`의 `PORT`**(예시·기본값 3000), **프론트는 5174**입니다. P1과 같이 띄울 때는 P1과 포트가 겹치지 않게 `PORT`만 조정하면 됩니다.
 
 ## 구성
 
@@ -26,7 +26,7 @@ npm run seed   # 데모 계정·강의·샘플 수강
 npm run start:dev
 ```
 
-- API 베이스: `http://localhost:3010/api/v1`
+- API 베이스: `http://localhost:<PORT>/api/v1` (`PORT`는 `.env`, 기본 3000)
 - 헬스: `GET /api/v1/health`
 - 인증: `POST /api/v1/auth/login`, `POST /api/v1/auth/signup`, `GET /api/v1/auth/me` (Bearer)
 
@@ -46,7 +46,9 @@ npm install
 npm run dev
 ```
 
-브라우저: `http://localhost:5174` — Vite가 `/api`를 백엔드 `3010`으로 프록시합니다.
+브라우저: `http://localhost:5174` — Vite가 `/api`를 백엔드로 프록시합니다. **`p2/backend/.env`의 `PORT`를 읽어** `http://127.0.0.1:<PORT>`로 맞춥니다(파일이 없으면 기본 3000). 전역 덮어쓰기는 `p2/frontend/.env`의 `VITE_API_PROXY_TARGET` 전체 URL.
+
+**터미널에 `http proxy error` / `ECONNREFUSED`가 뜨면** (1) 백엔드 터미널에 찍힌 `API http://127.0.0.1:…/api/v1` 포트와 (2) Vite 기동 시 `[vite] /api → …` 포트가 같은지 확인하세요. 백엔드 없이만 쓸 때는 `p2/frontend/.env`에 `VITE_USE_MOCK=true`.
 
 ## 기술 스택
 

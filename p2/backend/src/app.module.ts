@@ -5,7 +5,10 @@ import { AppService } from './app.service';
 import {
   User,
   Course,
+  CartItem,
   Enrollment,
+  EnrollmentVideoProgress,
+  TeacherRevenueLine,
   Feedback,
   Question,
   Answer,
@@ -15,6 +18,7 @@ import { AdminModule } from './admin/admin.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { CoursesModule } from './courses/courses.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { CartModule } from './cart/cart.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { QuestionsModule } from './questions/questions.module';
 import { FilesModule } from './files/files.module';
@@ -28,7 +32,17 @@ import { FilesModule } from './files/files.module';
       username: process.env.DB_USER ?? 'postgres',
       password: process.env.DB_PASSWORD ?? 'postgres',
       database: process.env.DB_NAME ?? 'p2_lms',
-      entities: [User, Course, Enrollment, Feedback, Question, Answer],
+      entities: [
+        User,
+        Course,
+        CartItem,
+        Enrollment,
+        EnrollmentVideoProgress,
+        TeacherRevenueLine,
+        Feedback,
+        Question,
+        Answer,
+      ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
       retryAttempts: 2,
@@ -39,6 +53,7 @@ import { FilesModule } from './files/files.module';
     TeacherModule,
     AdminModule,
     EnrollmentsModule,
+    CartModule,
     FeedbackModule,
     QuestionsModule,
     FilesModule,

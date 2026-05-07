@@ -336,14 +336,54 @@ const buildDetail = (c) => ({
 export const MOCK_COURSE_DETAIL = buildDetail(ALL_COURSES[0]);
 
 // ─── 상태 ─────────────────────────────────────────────────────
-export let mockCart        = [];
+export let mockCart = [];
 export let mockEnrollments = [];
-const mockQuestionById     = {};
-let mockQuestionId         = 100;
+/** enrollmentId → { video_id, last_second, completed }[] */
+export let mockEnrollmentProgress = {};
+const mockQuestionById = {};
+let mockQuestionId = 100;
+
+function mockVideoCountForCourse(courseId) {
+  const found = ALL_COURSES.find((c) => c.id === courseId);
+  if (!found) return 1;
+  const d = buildDetail(found);
+  let n = 0;
+  for (const s of d.sections || []) n += (s.videos || []).length;
+  return Math.max(1, n);
+}
+
+function recalcMockEnrollmentRow(enr) {
+  if (!enr) return;
+  const rows = mockEnrollmentProgress[enr.id] || [];
+  const total = mockVideoCountForCourse(enr.course_id);
+  const completed = rows.filter((r) => r.completed).length;
+  let sum = 0;
+  const course = ALL_COURSES.find((c) => c.id === enr.course_id) || ALL_COURSES[0];
+  const detail = buildDetail(course);
+  const durByVid = new Map();
+  for (const s of detail.sections || []) {
+    for (const v of s.videos || []) {
+      durByVid.set(
+        v.id,
+        Math.max(1, Number(v.duration_seconds ?? v.duration ?? 1)),
+      );
+    }
+  }
+  for (const r of rows) {
+    const dur = durByVid.get(r.video_id) ?? 1;
+    if (r.completed) sum += 100;
+    else if (r.last_second > 0)
+      sum += Math.min(100, (r.last_second / dur) * 100);
+  }
+  enr.progress_percent =
+    total > 0 ? Math.min(100, Math.round(sum / total)) : 0;
+  enr.status = enr.progress_percent >= 100 ? 'completed' : 'active';
+}
 
 export function mockReset() {
   mockCart = [];
   mockEnrollments = [];
+  mockEnrollmentProgress = {};
   Object.keys(mockQuestionById).forEach((k) => delete mockQuestionById[k]);
   mockQuestionId = 100;
 }
@@ -395,9 +435,43 @@ export function mockHandleRequest(method, path, body, userId) {
     return Promise.resolve({ ...enr, course: course ? buildDetail(course) : { ...buildDetail(ALL_COURSES[0]), id: enr.course_id, title: enr.course_title }, last_video_id: enr.last_video_id });
   }
   const progMatch = path.match(/^\/enrollments\/(\d+)\/progress$/);
-  if (progMatch && method === 'GET') return Promise.resolve([]);
+  if (progMatch && method === 'GET') {
+    const eid = Number(progMatch[1]);
+    return Promise.resolve(
+      Array.isArray(mockEnrollmentProgress[eid])
+        ? [...mockEnrollmentProgress[eid]]
+        : [],
+    );
+  }
   const updProg = path.match(/^\/enrollments\/(\d+)\/videos\/(\d+)\/progress$/);
-  if (updProg && method === 'PUT') return Promise.resolve(undefined);
+  if (updProg && method === 'PUT') {
+    const eid = Number(updProg[1]);
+    const vid = Number(updProg[2]);
+    if (!mockEnrollmentProgress[eid]) mockEnrollmentProgress[eid] = [];
+    const arr = mockEnrollmentProgress[eid];
+    const idx = arr.findIndex((x) => Number(x.video_id) === vid);
+    const next = {
+      video_id: vid,
+      last_second: Math.max(
+        0,
+        Number(json.last_second ?? json.lastSecond ?? 0),
+      ),
+      completed: Boolean(json.completed),
+    };
+    if (idx >= 0) {
+      arr[idx] = {
+        ...arr[idx],
+        last_second: Math.max(arr[idx].last_second, next.last_second),
+        completed: arr[idx].completed || next.completed,
+      };
+    } else arr.push(next);
+    const enr = mockEnrollments.find((e) => e.id === eid);
+    if (enr) {
+      enr.last_video_id = vid;
+      recalcMockEnrollmentRow(enr);
+    }
+    return Promise.resolve({ ok: true });
+  }
 
   const qList = path.match(/^\/courses\/(\d+)\/questions/);
   if (qList && method === 'GET') {

@@ -96,7 +96,11 @@ export default function TeacherDashboard() {
   return (
     <TeacherWorkspace
       title="대시보드"
-      subtitle={`플랫폼 수수료는 매출의 ${feePct}%로 가정해 표시합니다. (실제 정산 규칙은 운영 정책에 따릅니다)`}
+      subtitle={
+        dash?.revenue_source === 'ledger'
+          ? `매출·정산액은 수강 신청 시점 원장(DB) 기준입니다. 플랫폼 수수료 ${feePct}%(수강 건별 반올림 합산).`
+          : `플랫폼 수수료는 매출의 ${feePct}%로 가정해 표시합니다. (실제 정산 규칙은 운영 정책에 따릅니다)`
+      }
     >
       {err && (
         <div

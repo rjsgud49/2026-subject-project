@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,6 +18,7 @@ import {
 } from '../common/decorators/current-user.decorator';
 import { EnrollmentsService } from './enrollments.service';
 import { EnrollDto } from './dto/enroll.dto';
+import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 
 @Controller('enrollments')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -32,6 +34,29 @@ export class EnrollmentsController {
   @Post()
   enroll(@CurrentUser() user: AuthUser, @Body() dto: EnrollDto) {
     return this.enrollmentsService.enroll(user.id, dto.course_id);
+  }
+
+  @Get(':enrollmentId/progress')
+  getProgress(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+  ) {
+    return this.enrollmentsService.getProgress(user.id, enrollmentId);
+  }
+
+  @Put(':enrollmentId/videos/:videoId/progress')
+  updateVideoProgress(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @Param('videoId', ParseIntPipe) videoId: number,
+    @Body() dto: UpdateVideoProgressDto,
+  ) {
+    return this.enrollmentsService.upsertProgress(
+      user.id,
+      enrollmentId,
+      videoId,
+      dto,
+    );
   }
 
   @Delete(':id')

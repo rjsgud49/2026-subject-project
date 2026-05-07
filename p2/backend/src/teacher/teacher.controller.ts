@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Query,
   Patch,
   Post,
   Put,
@@ -41,6 +42,21 @@ export class TeacherController {
   @Get('dashboard')
   dashboard(@CurrentUser() user: AuthUser) {
     return this.teacherService.getDashboard(user.id);
+  }
+
+  @Get('settlement/ledger')
+  settlementLedger(
+    @CurrentUser() user: AuthUser,
+    @Query('page') page?: string,
+    @Query('size') size?: string,
+  ) {
+    const p = page ? parseInt(page, 10) : 1;
+    const s = size ? parseInt(size, 10) : 20;
+    return this.teacherService.getRevenueLedger(
+      user.id,
+      Number.isFinite(p) ? p : 1,
+      Number.isFinite(s) ? s : 20,
+    );
   }
 
   @Post('upload/image')

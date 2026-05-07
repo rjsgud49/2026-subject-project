@@ -24,9 +24,13 @@ export const saveVideoProgressThunk = createAsyncThunk(
 const pickInitialVideo = (enrollment) => {
   const sections = enrollment?.course?.sections ?? [];
   let pick = null;
-  if (enrollment?.last_video_id) {
+  const resumeId =
+    enrollment?.last_video_id != null
+      ? Number(enrollment.last_video_id)
+      : null;
+  if (resumeId != null && Number.isFinite(resumeId)) {
     for (const s of sections) {
-      const v = (s.videos || []).find((x) => x.id === enrollment.last_video_id);
+      const v = (s.videos || []).find((x) => Number(x.id) === resumeId);
       if (v) {
         pick = { ...v, sectionTitle: s.title };
         break;
@@ -93,6 +97,20 @@ const playerSlice = createSlice({
       .addCase(loadPlayer.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message;
+      })
+      .addCase(saveVideoProgressThunk.fulfilled, (state, action) => {
+        const { videoId, lastSecond, completed } = action.payload;
+        const vid = Number(videoId);
+        const idx = state.progress.findIndex((p) => Number(p.video_id) === vid);
+        const row = { video_id: vid, last_second: lastSecond, completed };
+        if (idx >= 0) state.progress[idx] = { ...state.progress[idx], ...row };
+        else state.progress.push(row);
+        if (state.enrollment) {
+          state.enrollment = {
+            ...state.enrollment,
+            last_video_id: vid,
+          };
+        }
       });
   },
 });

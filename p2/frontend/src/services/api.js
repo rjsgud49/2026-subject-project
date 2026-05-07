@@ -37,6 +37,30 @@ function qs(params) {
   return s ? `?${s}` : '';
 }
 
+/** 시드에 쓰이던 GCS gtv 샘플 URL이 403으로 막히는 환경이 많아 동작하는 샘플로 치환 */
+function fixCurriculumVideoUrls(sections) {
+  if (!Array.isArray(sections)) return [];
+  const repl = {
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4':
+      'https://filesamples.com/samples/video/mp4/sample_640x360.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4':
+      'https://filesamples.com/samples/video/mp4/sample_640x360.mp4',
+  };
+  return sections.map((s) => ({
+    ...s,
+    videos: (s.videos || []).map((v) => {
+      const u =
+        typeof v.video_url === 'string'
+          ? v.video_url
+          : typeof v.videoUrl === 'string'
+            ? v.videoUrl
+            : '';
+      const next = u && repl[u] ? repl[u] : u;
+      return next && next !== u ? { ...v, video_url: next } : { ...v };
+    }),
+  }));
+}
+
 function mapCourseFromP2(c) {
   if (!c) return c;
   return {
@@ -46,7 +70,7 @@ function mapCourseFromP2(c) {
     category: c.category ?? null,
     difficulty: c.difficulty ?? null,
     estimated_hours: c.estimated_hours ?? null,
-    sections: c.sections ?? [],
+    sections: fixCurriculumVideoUrls(c.sections ?? []),
     instructor_bio: c.instructor_bio ?? null,
     instructor_profile_html: c.instructor_profile_html ?? null,
     instructor_banner_url: c.instructor_banner_url ?? null,
@@ -195,9 +219,13 @@ export const api = {
     get: async (id) => mapCourseFromP2(await request(`/courses/${id}`)),
   },
   cart: {
-    list: () => Promise.resolve([]),
-    add: () => Promise.reject(new Error('p2 백엔드에는 장바구니 API가 없습니다.')),
-    remove: () => Promise.resolve(undefined),
+    list: () => request('/cart'),
+    add: (courseId) =>
+      request('/cart', {
+        method: 'POST',
+        body: JSON.stringify({ course_id: Number(courseId) }),
+      }),
+    remove: (courseId) => request(`/cart/${Number(courseId)}`, { method: 'DELETE' }),
   },
   enrollments: {
     list: async (status) => {
@@ -240,7 +268,8 @@ export const api = {
       return {
         id: Number(row.id),
         course_id: cid,
-        last_video_id: null,
+        last_video_id:
+          row.last_video_id != null ? Number(row.last_video_id) : null,
         course: {
           id: cid,
           title: c.title,
@@ -250,8 +279,20 @@ export const api = {
         },
       };
     },
-    getProgress: () => Promise.resolve([]),
-    updateProgress: () => Promise.resolve({ ok: true }),
+    getProgress: async (enrollmentId) => {
+      const data = await request(
+        `/enrollments/${Number(enrollmentId)}/progress`,
+      );
+      return Array.isArray(data) ? data : [];
+    },
+    updateProgress: async (enrollmentId, videoId, body) =>
+      request(
+        `/enrollments/${Number(enrollmentId)}/videos/${Number(videoId)}/progress`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        },
+      ),
   },
   questions: {
     list: (courseId, page = 1, size = 20) =>

@@ -45,10 +45,8 @@ export default function CourseDetail() {
   const addCart = async () => {
     if (!user) { requireLogin(); return; }
     const r = await dispatch(addToCartThunk(Number(courseId)));
-    if (!r.error) {
-      dispatch(fetchCart());
-      setShowCartModal(true);
-    } else window.alert(r.error.message);
+    if (!r.error) setShowCartModal(true);
+    else window.alert(r.error.message);
   };
 
   const enroll = async () => {
@@ -59,6 +57,7 @@ export default function CourseDetail() {
       return;
     }
     dispatch(fetchEnrollments());
+    dispatch(fetchCart());
     nav('/checkout/complete', { state: { single: true, courseId: Number(courseId) } });
   };
 

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { mkdirSync, existsSync } from 'fs';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { UPLOAD_ROOT } from './upload.constants';
 
@@ -23,7 +23,9 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  const port = parseInt(process.env.PORT ?? '3010', 10);
-  await app.listen(port);
+  const port = parseInt(process.env.PORT ?? '3000', 10);
+  await app.listen(port, '0.0.0.0');
+  const base = `http://127.0.0.1:${port}/api/v1`;
+  Logger.log(`API ${base}  (PORT=${port}, 프론트 Vite 프록시와 동일 포트여야 합니다)`);
 }
 bootstrap();

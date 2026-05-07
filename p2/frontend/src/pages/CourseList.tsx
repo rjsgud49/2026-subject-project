@@ -109,9 +109,11 @@ export default function CourseList() {
             <div style={{ padding: '20px', background: 'var(--color-error-50)', borderRadius: 8, border: '1px solid var(--color-error-100)', fontSize: 14, color: 'var(--color-error-700)', lineHeight: 1.6 }}>
               <strong>강의 목록을 불러오지 못했습니다.</strong>
               <p style={{ margin: '10px 0 0', color: 'var(--color-neutral-700)' }}>
-                백엔드가 꺼져 있으면 프록시 연결이 거절됩니다. 터미널에서 <code style={{ fontSize: 13 }}>p1/backend</code>에 들어가{' '}
-                <code style={{ fontSize: 13 }}>npm run start:dev</code>(기본 포트 3000)을 실행하거나, 프론트{' '}
-                <code style={{ fontSize: 13 }}>.env</code>에 <code style={{ fontSize: 13 }}>VITE_USE_MOCK=true</code>로 목 데이터를 켜 주세요.
+                백엔드가 꺼져 있으면 프록시 연결이 거절됩니다. 터미널에서 <code style={{ fontSize: 13 }}>p2/backend</code>에서{' '}
+                <code style={{ fontSize: 13 }}>npm run start:dev</code>을 실행하세요. Vite는 <code style={{ fontSize: 13 }}>p2/backend/.env</code>의{' '}
+                <code style={{ fontSize: 13 }}>PORT</code>(없으면 기본 3000)으로 <code style={{ fontSize: 13 }}>/api</code>를 프록시합니다. 다른 주소를 쓰려면{' '}
+                <code style={{ fontSize: 13 }}>p2/frontend/.env</code>에 <code style={{ fontSize: 13 }}>VITE_API_PROXY_TARGET</code> 전체 URL을 지정하세요.{' '}
+                백엔드 없이 쓰려면 프론트 <code style={{ fontSize: 13 }}>.env</code>에 <code style={{ fontSize: 13 }}>VITE_USE_MOCK=true</code>를 넣어 주세요.
               </p>
             </div>
           )}

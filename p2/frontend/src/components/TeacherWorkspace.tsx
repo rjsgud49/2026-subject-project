@@ -29,7 +29,7 @@ const NAV: NavDef[] = [
   },
   { to: '/teacher/courses/new', label: '새 강의', Icon: PlusCircle },
   { to: '/teacher/feedback', label: '피드백', Icon: MessageSquare },
-  { to: '/teacher/settlement', label: '정산계좌', Icon: Landmark },
+  { to: '/teacher/settlement', label: '정산', Icon: Landmark },
   { to: '/teacher/profile', label: '프로필', Icon: User },
 ];
 
