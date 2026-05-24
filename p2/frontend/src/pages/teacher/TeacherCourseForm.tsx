@@ -20,6 +20,8 @@ export default function TeacherCourseForm() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(0);
   const [isPublished, setIsPublished] = useState(false);
+  const [moderationStatus, setModerationStatus] = useState<'none' | 'approved' | 'rejected'>('none');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [curriculum, setCurriculum] = useState<CurriculumData>(() => defaultCurriculum());
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [err, setErr] = useState('');
@@ -54,6 +56,8 @@ export default function TeacherCourseForm() {
         setDescription(c.description ?? '');
         setPrice(typeof c.price === 'number' ? c.price : Number(c.price) || 0);
         setIsPublished(!!c.is_published);
+        setModerationStatus(c.moderation_status ?? 'none');
+        setRejectionReason(c.rejection_reason ?? '');
         setThumbnailUrl(c.thumbnail_url ?? '');
         setCurriculum(parseCurriculum(c.curriculum ?? null));
       })
@@ -78,7 +82,7 @@ export default function TeacherCourseForm() {
         title,
         description,
         price: Number(price),
-        isPublished,
+        isPublished: moderationStatus === 'rejected' ? false : isPublished,
         curriculum: payloadCurriculum,
         thumbnail_url: thumbnailUrl.trim() || undefined,
       };
@@ -235,8 +239,24 @@ export default function TeacherCourseForm() {
               onChange={(e) => setIsPublished(e.target.checked)}
               style={{ width: 18, height: 18, accentColor: 'var(--color-primary-500)' }}
             />
-            학생에게 공개 (강의 목록에 노출)
+            학생에게 공개 (반려 후 재신청 가능)
           </label>
+          {moderationStatus === 'rejected' && (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-warning-50)',
+                border: '1px solid var(--color-warning-200)',
+                color: 'var(--color-warning-900)',
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              <strong>관리자 반려 상태입니다.</strong> 내용을 수정한 뒤 다시 공개로 체크하면 재심사 요청이 됩니다.
+              {rejectionReason ? <div style={{ marginTop: 4 }}>사유: {rejectionReason}</div> : null}
+            </div>
+          )}
           {err && (title || !isEdit) && (
             <div
               role="alert"

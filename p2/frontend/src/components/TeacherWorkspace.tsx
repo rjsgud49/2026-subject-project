@@ -8,6 +8,7 @@ import {
   User,
   GraduationCap,
   Landmark,
+  FolderOpen,
 } from 'lucide-react';
 
 type NavDef = {
@@ -27,6 +28,7 @@ const NAV: NavDef[] = [
     match: (p) =>
       p === '/teacher/courses' || /^\/teacher\/courses\/\d+\/edit$/.test(p),
   },
+  { to: '/teacher/qna', label: 'QnA', Icon: FolderOpen },
   { to: '/teacher/courses/new', label: '새 강의', Icon: PlusCircle },
   { to: '/teacher/feedback', label: '피드백', Icon: MessageSquare },
   { to: '/teacher/settlement', label: '정산', Icon: Landmark },

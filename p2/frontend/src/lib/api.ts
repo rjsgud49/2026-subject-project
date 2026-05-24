@@ -89,9 +89,22 @@ export const api = {
         body: JSON.stringify({ role }),
       }),
     courses: () => apiRequest<AdminCourseRow[]>('/admin/courses'),
+    setCoursePublished: (id: number, isPublished: boolean, rejectionReason?: string) =>
+      apiRequest<AdminCourseRow>(`/admin/courses/${id}/published`, {
+        method: 'PATCH',
+        body: JSON.stringify({ isPublished, rejectionReason }),
+      }),
+    removeCourse: (id: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/courses/${id}`, { method: 'DELETE' }),
+    qna: () => apiRequest<AdminQnaCourse[]>('/admin/qna'),
+    removeQuestion: (questionId: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/qna/questions/${questionId}`, { method: 'DELETE' }),
+    removeAnswer: (answerId: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/qna/answers/${answerId}`, { method: 'DELETE' }),
   },
   teacher: {
     dashboard: () => apiRequest<TeacherDashboard>('/teacher/dashboard'),
+    qnaBoard: () => apiRequest<TeacherQnaBoard>('/teacher/qna'),
     settlementLedger: (page = 1, size = 20) =>
       apiRequest<TeacherRevenueLedgerResponse>(
         `/teacher/settlement/ledger?page=${page}&size=${size}`,
@@ -158,6 +171,14 @@ export const api = {
     },
     deleteCourse: (id: number) =>
       apiRequest<{ ok: boolean }>(`/teacher/courses/${id}`, { method: 'DELETE' }),
+    updateQnaAnswer: (questionId: number, body: { body: string }) =>
+      apiRequest<{ id: number; question_id: number; body: string; user_id: number; updated_at: string }>(
+        `/teacher/qna/questions/${questionId}/answer`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        },
+      ),
     updateProfile: (body: {
       name?: string;
       bio?: string;
@@ -181,6 +202,13 @@ export const api = {
       }),
     remove: (id: number) =>
       apiRequest<{ ok: boolean }>(`/enrollments/${id}`, { method: 'DELETE' }),
+    listNotes: (enrollmentId: number) =>
+      apiRequest<StudyNoteRow[]>(`/enrollments/${enrollmentId}/notes`),
+    upsertNote: (enrollmentId: number, videoId: number, text: string) =>
+      apiRequest<StudyNoteRow>(`/enrollments/${enrollmentId}/videos/${videoId}/note`, {
+        method: 'PUT',
+        body: JSON.stringify({ text }),
+      }),
   },
   feedback: {
     mine: () => apiRequest<FeedbackRow[]>('/feedback/mine'),
@@ -266,6 +294,17 @@ export type TeacherDashboardCourseRow = {
   net_revenue: number;
 };
 
+export type TeacherDashboardRecentPurchase = {
+  id: number;
+  course_id: number;
+  course_title: string | null;
+  price_snapshot: number;
+  gross_amount: number;
+  platform_fee: number;
+  net_amount: number;
+  enrolled_at: string;
+};
+
 export type TeacherDashboard = {
   platform_fee_rate: number;
   /** 수익 집계가 DB 원장 기준인지 표시 */
@@ -278,6 +317,45 @@ export type TeacherDashboard = {
     total_views: number;
   };
   courses: TeacherDashboardCourseRow[];
+  /** 학생 수강(구매) 시점별 최근 매출 원장 */
+  recent_purchases?: TeacherDashboardRecentPurchase[];
+};
+
+export type TeacherQnaAnswer = {
+  id: number;
+  body: string;
+  user_name: string;
+  created_at: string;
+  role: 'teacher' | 'student';
+};
+
+export type TeacherQnaQuestion = {
+  id: number;
+  title: string;
+  body: string;
+  user_id: number;
+  user_name: string;
+  created_at: string;
+  answer_count: number;
+  teacher_answer: {
+    id: number;
+    body: string;
+    user_name: string;
+    updated_at: string;
+  } | null;
+  answers: TeacherQnaAnswer[];
+};
+
+export type TeacherQnaCourse = {
+  id: number;
+  title: string;
+  is_published: boolean;
+  question_count: number;
+  questions: TeacherQnaQuestion[];
+};
+
+export type TeacherQnaBoard = {
+  courses: TeacherQnaCourse[];
 };
 
 export type CoursePublic = {
@@ -306,6 +384,8 @@ export type TeacherCourse = {
   description: string | null;
   price: number;
   is_published: boolean;
+  moderation_status: 'none' | 'approved' | 'rejected';
+  rejection_reason: string | null;
   created_at: string;
   curriculum?: Record<string, unknown> | null;
   thumbnail_url?: string | null;
@@ -325,9 +405,46 @@ export type AdminCourseRow = {
   description: string | null;
   price: number;
   is_published: boolean;
+  moderation_status: 'none' | 'approved' | 'rejected';
+  rejection_reason: string | null;
   instructor_id: number;
   instructor: { id: number; name: string; email: string } | null;
   created_at: string;
+  thumbnail_url?: string | null;
+  sections?: unknown[];
+};
+
+export type AdminQnaAnswer = {
+  id: number;
+  body: string;
+  user_name: string;
+  created_at: string;
+};
+
+export type AdminQnaQuestion = {
+  id: number;
+  title: string;
+  body: string;
+  is_private: boolean;
+  user_name: string;
+  created_at: string;
+  answer_count: number;
+  answers: AdminQnaAnswer[];
+};
+
+export type AdminQnaCourse = {
+  id: number;
+  title: string;
+  is_published: boolean;
+  instructor_name: string | null;
+  question_count: number;
+  questions: AdminQnaQuestion[];
+};
+
+export type StudyNoteRow = {
+  video_id: number;
+  text: string;
+  updated_at: string | null;
 };
 
 export type EnrollmentRow = {

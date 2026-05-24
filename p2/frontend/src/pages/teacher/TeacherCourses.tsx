@@ -132,6 +132,23 @@ export default function TeacherCourses() {
                 >
                   {c.is_published ? '공개' : '비공개'}
                 </span>
+                {c.moderation_status === 'rejected' && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 42,
+                      right: 10,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-full)',
+                      background: 'var(--color-warning-50)',
+                      color: 'var(--color-warning-800)',
+                    }}
+                  >
+                    반려됨
+                  </span>
+                )}
               </div>
               <div style={{ padding: '16px 16px 14px', flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.35, color: 'var(--color-neutral-900)' }}>
@@ -143,6 +160,11 @@ export default function TeacherCourses() {
                 <p style={{ margin: 0, fontSize: 12, color: 'var(--color-neutral-500)' }}>
                   조회 {c.view_count != null ? Number(c.view_count).toLocaleString('ko-KR') : '0'}
                 </p>
+                {c.moderation_status === 'rejected' && c.rejection_reason ? (
+                  <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: 'var(--color-warning-800)' }}>
+                    반려 사유: {c.rejection_reason}
+                  </p>
+                ) : null}
                 <div style={{ marginTop: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <Button
                     variant="secondary"

@@ -36,6 +36,12 @@ export class Course {
   @Column({ name: 'is_published', type: 'boolean', default: false })
   isPublished: boolean;
 
+  @Column({ name: 'moderation_status', type: 'varchar', length: 20, default: 'none' })
+  moderationStatus: 'none' | 'approved' | 'rejected';
+
+  @Column({ name: 'rejection_reason', type: 'text', nullable: true })
+  rejectionReason: string | null;
+
   /** 커리큘럼 JSON: { sections: [{ title, videos: [{ id, title, duration, video_url }] }] } */
   @Column({ name: 'curriculum_json', type: 'text', nullable: true })
   curriculumJson: string | null;

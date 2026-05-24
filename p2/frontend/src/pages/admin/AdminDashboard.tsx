@@ -6,6 +6,7 @@ import {
   GraduationCap,
   LayoutList,
   Shield,
+  AlertTriangle,
   UserCog,
   Users,
 } from 'lucide-react';
@@ -159,9 +160,9 @@ export default function AdminDashboard() {
       <style>{`@keyframes admin-dash-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
 
       <div style={{ marginBottom: 28 }}>
-        <h1 className="page-title">관리자 대시보드</h1>
+        <h1 className="page-title">관리자 데쉬보드</h1>
         <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--color-neutral-500)', lineHeight: 1.55 }}>
-          회원·강의·수강 규모를 한눈에 보고, 자주 쓰는 관리 화면으로 바로 이동할 수 있습니다.
+          서비스 현황 요약입니다.
         </p>
       </div>
 
@@ -207,7 +208,7 @@ export default function AdminDashboard() {
             <KpiCard
               label="전체 회원"
               value={stats.users.toLocaleString('ko-KR')}
-              hint="가입된 모든 역할 사용자"
+              hint="등록된 계정 수"
               border="var(--color-primary-200)"
               bg="var(--color-primary-50)"
               fg="var(--color-primary-700)"
@@ -216,7 +217,7 @@ export default function AdminDashboard() {
             <KpiCard
               label="등록 강의"
               value={stats.courses.toLocaleString('ko-KR')}
-              hint="플랫폼에 생성된 강의 수"
+              hint="생성된 강의 수"
               border="var(--color-success-200)"
               bg="var(--color-success-50)"
               fg="var(--color-success-700)"
@@ -225,7 +226,7 @@ export default function AdminDashboard() {
             <KpiCard
               label="수강 신청"
               value={stats.enrollments.toLocaleString('ko-KR')}
-              hint="누적 수강(등록) 건수"
+              hint="누적 수강 건수"
               border="var(--color-warning-200)"
               bg="var(--color-warning-50)"
               fg="var(--color-warning-800)"
@@ -248,14 +249,7 @@ export default function AdminDashboard() {
             )}
           </section>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: 14,
-              marginBottom: 26,
-            }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 14 }}>
             <Link
               to="/admin/users"
               className="card"
@@ -321,9 +315,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 800, fontSize: 15 }}>전체 강의</div>
-                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>
-                    강의·강사·공개 여부 확인
-                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>비공개 포함</div>
                 </div>
               </div>
               <ArrowRight size={20} color="var(--color-neutral-400)" />
@@ -356,13 +348,88 @@ export default function AdminDashboard() {
                   <Shield size={22} color="var(--color-neutral-600)" />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 15 }}>공개 강의 목록</div>
-                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>
-                    학생 화면과 동일한 카탈로그
-                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>공개 강의</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>수강 신청 화면</div>
                 </div>
               </div>
               <ArrowRight size={20} color="var(--color-neutral-400)" />
+            </Link>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, marginBottom: 26 }}>
+            <Link
+              to="/admin/moderation/courses"
+              className="card"
+              style={{
+                padding: '22px 24px',
+                textDecoration: 'none',
+                color: 'inherit',
+                minHeight: 132,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    background: 'var(--color-warning-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AlertTriangle size={26} color="var(--color-warning-700)" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 6 }}>강의검열</div>
+                  <div style={{ fontSize: 14, color: 'var(--color-neutral-500)', lineHeight: 1.6 }}>
+                    강의 내용, 반려 사유, 공개 상태를 크게 보고 판단합니다.
+                  </div>
+                </div>
+              </div>
+              <ArrowRight size={24} color="var(--color-neutral-400)" />
+            </Link>
+            <Link
+              to="/admin/moderation/qna"
+              className="card"
+              style={{
+                padding: '22px 24px',
+                textDecoration: 'none',
+                color: 'inherit',
+                minHeight: 132,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 16,
+                    background: 'var(--color-primary-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <FolderOpen size={26} color="var(--color-primary-700)" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 20, marginBottom: 6 }}>QnA검열</div>
+                  <div style={{ fontSize: 14, color: 'var(--color-neutral-500)', lineHeight: 1.6 }}>
+                    질문과 답변을 한 화면에서 크게 확인하고 바로 삭제합니다.
+                  </div>
+                </div>
+              </div>
+              <ArrowRight size={24} color="var(--color-neutral-400)" />
             </Link>
           </div>
 

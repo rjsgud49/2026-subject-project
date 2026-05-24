@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, MessageSquare, Plus, Sparkles, TrendingUp, Eye, Users, Wallet } from 'lucide-react';
+import { BookOpen, MessageSquare, Plus, Sparkles, TrendingUp, Eye, Users, Wallet, ShoppingCart } from 'lucide-react';
 import TeacherWorkspace from '../../components/TeacherWorkspace';
 import Button from '../../components/Button';
 import { api, type TeacherDashboard } from '../../lib/api';
@@ -16,24 +16,27 @@ export default function TeacherDashboard() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let ok = true;
+  const loadDashboard = useCallback(() => {
     setLoading(true);
+    setErr('');
     api.teacher
       .dashboard()
-      .then((data) => {
-        if (ok) setDash(data);
-      })
-      .catch((e: Error) => {
-        if (ok) setErr(e.message);
-      })
-      .finally(() => {
-        if (ok) setLoading(false);
-      });
-    return () => {
-      ok = false;
-    };
+      .then(setDash)
+      .catch((e: Error) => setErr(e.message))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') loadDashboard();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [loadDashboard]);
 
   const courses = dash?.courses ?? [];
   const pub = courses.filter((c) => c.is_published).length;
@@ -129,11 +132,86 @@ export default function TeacherDashboard() {
         <>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
             {stat('총 조회수', t!.total_views.toLocaleString('ko-KR'), '공개 강의 상세가 열릴 때마다 증가', 'blue', Eye)}
-            {stat('총 수강 등록', t!.total_enrollments.toLocaleString('ko-KR'), '전 강의 누적 수강 신청 수', 'green', Users)}
-            {stat('총 매출', formatWon(t!.gross_revenue), '수강가 × 수강 인원 합(현재 강의가 기준)', 'amber', Wallet)}
-            {stat('수수료', formatWon(t!.platform_fee), `${feePct}%`, 'violet', TrendingUp)}
-            {stat('예상 정산', formatWon(t!.net_revenue), '매출 − 수수료', 'green', Wallet)}
+            {stat('총 수강(구매) 건', t!.total_enrollments.toLocaleString('ko-KR'), '학생이 수강신청한 누적 건수 = 매출 원장 행 수', 'green', Users)}
+            {stat(
+              '총 매출',
+              formatWon(t!.gross_revenue),
+              dash?.revenue_source === 'ledger'
+                ? '학생이 결제(수강신청)할 때마다 DB에 기록된 매출 합계'
+                : '수강가 × 수강 인원 합',
+              'amber',
+              Wallet,
+            )}
+            {stat('수수료', formatWon(t!.platform_fee), `${feePct}% (건당 반올림 합산)`, 'violet', TrendingUp)}
+            {stat('예상 정산', formatWon(t!.net_revenue), '강사에게 귀속되는 금액(매출 − 수수료)', 'green', Wallet)}
           </div>
+
+          {(dash.recent_purchases?.length ?? 0) > 0 && (
+            <div
+              style={{
+                marginBottom: 24,
+                padding: '18px 20px',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-success-200)',
+                background: 'linear-gradient(135deg, var(--color-success-50) 0%, #fff 55%)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <ShoppingCart size={22} style={{ color: 'var(--color-success-700)' }} />
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-neutral-900)' }}>
+                    최근 학생 구매(수강) 매출
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--color-neutral-600)', marginTop: 2 }}>
+                    누군가 강의를 구매(수강신청)하면 아래에 즉시 쌓입니다. 전체 내역은 정산 메뉴에서 확인하세요.
+                  </div>
+                </div>
+                <Link
+                  to="/teacher/settlement"
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: 'var(--color-primary-700)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  수익 원장 전체 →
+                </Link>
+              </div>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(dash.recent_purchases ?? []).map((p) => (
+                  <li
+                    key={p.id}
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'baseline',
+                      gap: '8px 16px',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: '#fff',
+                      border: '1px solid var(--color-neutral-200)',
+                      fontSize: 14,
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: 'var(--color-neutral-900)', flex: '1 1 180px' }}>
+                      {p.course_title ?? `강의 #${p.course_id}`}
+                    </span>
+                    <span style={{ color: 'var(--color-neutral-500)', fontSize: 13 }}>
+                      {new Date(p.enrolled_at).toLocaleString('ko-KR')}
+                    </span>
+                    <span style={{ marginLeft: 'auto', fontWeight: 800, color: 'var(--color-success-800)' }}>
+                      +{formatWon(p.gross_amount)} 매출
+                    </span>
+                    <span style={{ fontSize: 13, color: 'var(--color-neutral-600)' }}>
+                      정산 {formatWon(p.net_amount)} · 수수료 {formatWon(p.platform_fee)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
             <Button size="md" style={{ display: 'inline-flex', gap: 8 }} onClick={() => nav('/teacher/courses/new')}>
@@ -147,6 +225,10 @@ export default function TeacherDashboard() {
             <Button variant="secondary" size="md" style={{ display: 'inline-flex', gap: 8 }} onClick={() => nav('/teacher/feedback')}>
               <MessageSquare size={18} />
               피드백 관리
+            </Button>
+            <Button variant="secondary" size="md" style={{ display: 'inline-flex', gap: 8 }} onClick={() => nav('/teacher/qna')}>
+              <MessageSquare size={18} />
+              QnA 세션
             </Button>
           </div>
 

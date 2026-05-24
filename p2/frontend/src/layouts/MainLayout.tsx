@@ -30,17 +30,17 @@ export default function MainLayout() {
   const nav = useNavigate();
   const { pathname } = useLocation();
   const isTeacher = user?.role === 'teacher';
+  const isStudent = user?.role === 'student';
 
   const { tickets } = useFeedbackTickets(!!user && !isTeacher);
   const totalTickets = user && !isTeacher ? tickets.doc + tickets.video + tickets.premium : 0;
 
   const cartItems = useAppSelector((s) => s.cart.items);
-  const cartCount =
-    user?.role === 'student' && Array.isArray(cartItems) ? cartItems.length : 0;
+  const cartCount = isStudent && Array.isArray(cartItems) ? cartItems.length : 0;
 
   useEffect(() => {
-    if (user?.role === 'student') dispatch(fetchCart());
-  }, [user?.id, user?.role, dispatch]);
+    if (isStudent) dispatch(fetchCart());
+  }, [user?.id, user?.role, dispatch, isStudent]);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -64,8 +64,8 @@ export default function MainLayout() {
       { to: '/courses', label: '강의', Icon: BookOpen },
       { to: classroomPath, label: '내 강의실', Icon: LayoutDashboard },
     ] as const;
-    return [...core, { to: '/cart', label: '장바구니', Icon: ShoppingCart }] as const;
-  }, [classroomPath, isTeacher]);
+    return isStudent ? [...core, { to: '/cart', label: '장바구니', Icon: ShoppingCart }] as const : core;
+  }, [classroomPath, isTeacher, isStudent]);
 
   const navItemActive = (to: string) => {
     if (to === '/courses') return pathname === '/courses' || pathname.startsWith('/courses/');

@@ -19,6 +19,7 @@ import {
 import { EnrollmentsService } from './enrollments.service';
 import { EnrollDto } from './dto/enroll.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
+import { UpsertStudyNoteDto } from './dto/upsert-study-note.dto';
 
 @Controller('enrollments')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -42,6 +43,29 @@ export class EnrollmentsController {
     @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
   ) {
     return this.enrollmentsService.getProgress(user.id, enrollmentId);
+  }
+
+  @Get(':enrollmentId/notes')
+  listStudyNotes(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+  ) {
+    return this.enrollmentsService.listStudyNotes(user.id, enrollmentId);
+  }
+
+  @Put(':enrollmentId/videos/:videoId/note')
+  upsertStudyNote(
+    @CurrentUser() user: AuthUser,
+    @Param('enrollmentId', ParseIntPipe) enrollmentId: number,
+    @Param('videoId', ParseIntPipe) videoId: number,
+    @Body() dto: UpsertStudyNoteDto,
+  ) {
+    return this.enrollmentsService.upsertStudyNote(
+      user.id,
+      enrollmentId,
+      videoId,
+      dto.text,
+    );
   }
 
   @Put(':enrollmentId/videos/:videoId/progress')

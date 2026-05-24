@@ -27,6 +27,7 @@ import { TeacherService } from './teacher.service';
 import { CreateCourseDto } from '../courses/dto/create-course.dto';
 import { UpdateCourseDto } from '../courses/dto/update-course.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { CreateAnswerDto } from '../questions/dto/create-answer.dto';
 import { p2DiskStorage } from '../upload.storage';
 import {
   assertTeacherImageUpload,
@@ -112,6 +113,20 @@ export class TeacherController {
   @Get('courses')
   myCourses(@CurrentUser() user: AuthUser) {
     return this.teacherService.listMyCourses(user.id);
+  }
+
+  @Get('qna')
+  qna(@CurrentUser() user: AuthUser) {
+    return this.teacherService.getQnaBoard(user.id);
+  }
+
+  @Put('qna/questions/:questionId/answer')
+  updateQnaAnswer(
+    @CurrentUser() user: AuthUser,
+    @Param('questionId', ParseIntPipe) questionId: number,
+    @Body() dto: CreateAnswerDto,
+  ) {
+    return this.teacherService.upsertQnaAnswer(user.id, questionId, dto);
   }
 
   @Post('courses')

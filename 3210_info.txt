@@ -1,0 +1,11 @@
+1. 테스트 할 수 있는 주소
+
+olp.rjsgud.com
+
+2. 테스트에 사용할 계정: 관리자, 강사, 학생
+
+| 이메일 | 비밀번호 | 역할 |
+|--------|----------|------|
+| admin@p2.local | admin123 | admin |
+| teacher@p2.local | teacher123 | teacher |
+| student@p2.local | student123 | student |

@@ -6,7 +6,7 @@ README의 **project2** 범위: 역할 분리와 인증 전체(백엔드 + 프론
 
 | 역할 | 경로 | 기능 |
 |------|------|------|
-| **관리자** | `/admin` | 대시보드 통계, 전체 회원·역할 변경, 전체 강의(비공개 포함) 조회 |
+| **관리자** | `/admin` | 대시보드 통계, 전체 회원·역할 변경, 전체 강의(비공개 포함) 조회, 강의·QnA 검열 |
 | **강사** | `/teacher` | 대시보드, 내 강의 CRUD, 공개 여부, 프로필(이름·소개) 수정, 학생 피드백 질의·답변 |
 | **학생** | `/student` | 대시보드, 공개 강의 탐색, 수강 신청·내 수강·수강 취소, 피드백 요청·확인 |
 | 공개 | `/`, `/courses`, `/courses/:id` | 홈, 강의 목록·상세(비로그인 조회, 수강은 학생 로그인 시) |
@@ -29,6 +29,7 @@ npm run start:dev
 - API 베이스: `http://localhost:<PORT>/api/v1` (`PORT`는 `.env`, 기본 3000)
 - 헬스: `GET /api/v1/health`
 - 인증: `POST /api/v1/auth/login`, `POST /api/v1/auth/signup`, `GET /api/v1/auth/me` (Bearer)
+- 관리자 검열: `GET /api/v1/admin/qna`, `PATCH /api/v1/admin/courses/:id/published`, `DELETE /api/v1/admin/courses/:id`, `DELETE /api/v1/admin/qna/questions/:questionId`, `DELETE /api/v1/admin/qna/answers/:answerId`
 
 ### 시드 데모 계정
 

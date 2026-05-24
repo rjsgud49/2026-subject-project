@@ -36,7 +36,7 @@ export default function AdminUsers() {
   return (
     <div className="page-pad">
       <h1 className="page-title">회원·역할</h1>
-      <p className="muted">사용자 역할을 변경합니다. 본인 계정도 주의해 수정하세요.</p>
+      <p className="muted">역할 변경 시 권한이 즉시 적용됩니다.</p>
       {err && <div className="alert error">{err}</div>}
       {msg && <div className="alert ok">{msg}</div>}
       <div className="table-wrap">
@@ -63,9 +63,9 @@ export default function AdminUsers() {
                     onChange={(e) => void changeRole(u.id, e.target.value as UserRole)}
                     aria-label={`${u.email} 역할`}
                   >
-                    <option value="student">student</option>
-                    <option value="teacher">teacher</option>
-                    <option value="admin">admin</option>
+                    <option value="student">학생</option>
+                    <option value="teacher">강사</option>
+                    <option value="admin">관리자</option>
                   </select>
                 </td>
               </tr>

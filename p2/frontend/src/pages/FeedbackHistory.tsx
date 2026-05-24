@@ -161,7 +161,7 @@ function SubmissionCard({ sub }: { sub: Submission }) {
             }}
           >
             <MessageCircle size={15} />
-            문담
+             
           </Link>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: st.color, background: st.bg, padding: '4px 10px', borderRadius: 'var(--radius-full)' }}>
             <st.Icon size={12} />

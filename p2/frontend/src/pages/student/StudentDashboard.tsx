@@ -25,9 +25,6 @@ export default function StudentDashboard() {
         <Link to="/student/my" className="btn secondary">
           내 수강 전체
         </Link>
-        <Link to="/student/feedback" className="btn ghost">
-          피드백 요청 관리
-        </Link>
       </div>
       <h2 className="section-title">최근 수강</h2>
       {rows.length === 0 && <p className="muted">아직 수강 중인 강의가 없습니다.</p>}

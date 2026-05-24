@@ -7,3 +7,4 @@ export * from './teacher-revenue-line.entity';
 export * from './feedback.entity';
 export * from './question.entity';
 export * from './answer.entity';
+export * from './study-note.entity';

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Delete,
   Param,
   ParseIntPipe,
   Patch,
@@ -40,5 +41,33 @@ export class AdminController {
   @Get('courses')
   courses() {
     return this.adminService.listAllCourses();
+  }
+
+  @Patch('courses/:id/published')
+  setCoursePublished(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { isPublished: boolean; rejectionReason?: string },
+  ) {
+    return this.adminService.setCoursePublished(id, !!body.isPublished, body.rejectionReason);
+  }
+
+  @Delete('courses/:id')
+  removeCourse(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.removeCourse(id);
+  }
+
+  @Get('qna')
+  qna() {
+    return this.adminService.listAllQna();
+  }
+
+  @Delete('qna/questions/:questionId')
+  removeQuestion(@Param('questionId', ParseIntPipe) questionId: number) {
+    return this.adminService.removeQuestion(questionId);
+  }
+
+  @Delete('qna/answers/:answerId')
+  removeAnswer(@Param('answerId', ParseIntPipe) answerId: number) {
+    return this.adminService.removeAnswer(answerId);
   }
 }

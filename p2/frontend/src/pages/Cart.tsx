@@ -103,7 +103,7 @@ export default function Cart() {
           장바구니 및 수강신청 기능은<br />로그인 후 이용할 수 있습니다.
         </p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <Button variant="secondary" onClick={() => nav('/courses')}>강의 둘러보기</Button>
+          <Button variant="secondary" onClick={() => nav('/courses')}>강의 둘러 보기</Button>
           <Button onClick={() => nav('/login', { state: { from: '/cart' } })}>로그인하기</Button>
         </div>
       </div>
@@ -260,84 +260,41 @@ export default function Cart() {
                     >
                       {i.course_title}
                     </Link>
-                    <p style={{ margin: '3px 0 0', fontSize: 14, fontWeight: 700, color: 'var(--color-neutral-900)' }}>
-                      {Number(i.price) === 0 ? <span style={{ color: 'var(--color-success-600)' }}>무료</span> : formatPrice(i.price)}
-                    </p>
+                    <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 4 }}>
+                      {formatPrice(i.price)}
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void dispatch(removeFromCartThunk(i.course_id))}
-                    aria-label="강의 삭제"
+                  <Button
+                    size="sm"
+                    variant="secondary"
                     disabled={removing}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 32, height: 32, borderRadius: 8,
-                      border: 'none', background: 'transparent',
-                      color: 'var(--color-neutral-400)', cursor: removing ? 'wait' : 'pointer', fontSize: 16,
-                      transition: 'background 150ms, color 150ms', fontFamily: 'inherit',
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!removing) {
-                        e.currentTarget.style.background = 'var(--color-error-50)';
-                        e.currentTarget.style.color = 'var(--color-error-600)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--color-neutral-400)';
-                    }}
+                    onClick={() => void dispatch(removeFromCartThunk(i.course_id)).unwrap().catch((e) => window.alert(e instanceof Error ? e.message : '삭제 실패'))}
                   >
-                    ✕
-                  </button>
+                    삭제
+                  </Button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div
-            style={{
-              width: 280,
-              minWidth: 240,
-              position: 'sticky',
-              top: 'calc(var(--nav-h) + 16px)',
-              padding: '20px',
-              background: 'var(--color-neutral-0)',
-              border: '1px solid var(--color-neutral-200)',
-              borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-          >
-            <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 16px', color: 'var(--color-neutral-900)' }}>결제 요약</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 14, color: 'var(--color-neutral-500)' }}>
-              <span>선택한 강의</span>
-              <span>{selected.size}개</span>
+          <aside style={{ width: 280, flexShrink: 0 }}>
+            <div style={{ background: 'var(--color-neutral-0)', border: '1px solid var(--color-neutral-200)', borderRadius: 'var(--radius-lg)', padding: 20, position: 'sticky', top: 100 }}>
+              <div style={{ fontSize: 14, color: 'var(--color-neutral-500)', marginBottom: 8 }}>선택 합계</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-neutral-900)', marginBottom: 16 }}>
+                {formatPrice(total)}
+              </div>
+              <Button
+                onClick={() => void checkout()}
+                disabled={!selected.size || checkingOut}
+                style={{ width: '100%' }}
+              >
+                수강신청하기
+              </Button>
+              <p style={{ fontSize: 12, color: 'var(--color-neutral-500)', lineHeight: 1.6, margin: '12px 0 0' }}>
+                선택한 강의만 수강신청됩니다. 장바구니는 학생 계정에서만 사용할 수 있습니다.
+              </p>
             </div>
-            <div
-              style={{
-                display: 'flex', justifyContent: 'space-between',
-                padding: '14px 0',
-                borderTop: '1px solid var(--color-neutral-200)',
-                marginTop: 8,
-                fontSize: 18, fontWeight: 700,
-                color: 'var(--color-neutral-900)',
-              }}
-            >
-              <span>합계</span>
-              <span>{total === 0 && selected.size ? '무료' : formatPrice(total)}</span>
-            </div>
-            <Button
-              onClick={() => void checkout()}
-              disabled={!selected.size || checkingOut}
-              loading={checkingOut}
-              style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
-            >
-              수강신청하기
-            </Button>
-            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--color-neutral-400)', lineHeight: 1.5 }}>
-              이미 수강 중이거나 비공개 강의는 신청 시 오류가 날 수 있습니다. 해당 항목은 장바구니에서 제거해 주세요.
-            </p>
-          </div>
+          </aside>
         </div>
       )}
     </div>

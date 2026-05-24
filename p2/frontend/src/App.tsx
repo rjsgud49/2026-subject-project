@@ -21,12 +21,15 @@ import InstructorProfile from './pages/InstructorProfile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminCourses from './pages/admin/AdminCourses';
+import AdminModeration from './pages/admin/AdminModeration';
+import AdminQnaModeration from './pages/admin/AdminQnaModeration';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
 import TeacherCourses from './pages/teacher/TeacherCourses';
 import TeacherCourseForm from './pages/teacher/TeacherCourseForm';
 import TeacherProfile from './pages/teacher/TeacherProfile';
 import TeacherSettlement from './pages/teacher/TeacherSettlement';
 import TeacherFeedback from './pages/teacher/TeacherFeedback';
+import TeacherQna from './pages/teacher/TeacherQna';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentBrowse from './pages/student/StudentBrowse';
 import StudentMyCourses from './pages/student/StudentMyCourses';
@@ -115,6 +118,26 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin/moderation"
+          element={<Navigate to="/admin/moderation/courses" replace />}
+        />
+        <Route
+          path="/admin/moderation/courses"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminModeration />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/moderation/qna"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminQnaModeration />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/teacher"
@@ -153,6 +176,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['teacher']}>
               <TeacherFeedback />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/qna"
+          element={
+            <ProtectedRoute roles={['teacher']}>
+              <TeacherQna />
             </ProtectedRoute>
           }
         />

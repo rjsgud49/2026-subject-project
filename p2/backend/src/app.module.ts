@@ -12,6 +12,7 @@ import {
   Feedback,
   Question,
   Answer,
+  StudyNote,
 } from './entities';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
@@ -42,6 +43,7 @@ import { FilesModule } from './files/files.module';
         Feedback,
         Question,
         Answer,
+        StudyNote,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',

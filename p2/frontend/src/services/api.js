@@ -293,6 +293,16 @@ export const api = {
           body: JSON.stringify(body),
         },
       ),
+    listNotes: (enrollmentId) =>
+      request(`/enrollments/${Number(enrollmentId)}/notes`),
+    upsertNote: (enrollmentId, videoId, text) =>
+      request(
+        `/enrollments/${Number(enrollmentId)}/videos/${Number(videoId)}/note`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ text }),
+        },
+      ),
   },
   questions: {
     list: (courseId, page = 1, size = 20) =>

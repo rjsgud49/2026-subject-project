@@ -85,7 +85,7 @@ export default function AdminCourses() {
         </Link>
         <h1 className="page-title">전체 강의</h1>
         <p style={{ margin: '8px 0 0', fontSize: 15, color: 'var(--color-neutral-500)', lineHeight: 1.55 }}>
-          비공개 강의를 포함한 전체 목록입니다. 학생에게 보이는 화면은 강의 상세 링크로 확인할 수 있습니다.
+          비공개 강의를 포함합니다.
         </p>
       </div>
 
@@ -282,11 +282,9 @@ export default function AdminCourses() {
               <div style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--color-neutral-500)' }}>
                 <LayoutDashboard size={40} style={{ margin: '0 auto 12px', opacity: 0.35 }} />
                 <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--color-neutral-700)' }}>
-                  표시할 강의가 없습니다.
+                  조건에 맞는 강의가 없습니다.
                 </p>
-                <p style={{ margin: '8px 0 0', fontSize: 13 }}>
-                  검색어나 공개 필터를 바꿔 보거나, 강사 계정에서 강의를 등록해 주세요.
-                </p>
+                <p style={{ margin: '8px 0 0', fontSize: 13 }}>검색·필터를 조정해 보세요.</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
