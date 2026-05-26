@@ -82,3 +82,6 @@ PostgreSQL만 띄웁니다. 앱은 위 npm 명령으로 실행하세요.
 ## 문서
 
 - `docs/p3/기획서.md` — P3 범위·이벤트·API 요약
+
+
+cd ~/2026-subject-project && git pull origin main && cd p3/backend && npm install && npm run build && pm2 restart p3-backend --update-env && cd ../frontend && npm install && npm run build && echo "배포 완료@@"
