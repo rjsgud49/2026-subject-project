@@ -33,6 +33,8 @@ import StudentMyCourses from './pages/student/StudentMyCourses';
 import StudentFeedbackNew from './pages/student/StudentFeedbackNew';
 import StudentFeedbackList from './pages/student/StudentFeedbackList';
 import StudentFeedbackDetail from './pages/student/StudentFeedbackDetail';
+import NotificationSettings from './pages/NotificationSettings';
+import AdminOps from './pages/admin/AdminOps';
 
 export default function App() {
   return (
@@ -112,6 +114,22 @@ export default function App() {
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/ops"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminOps />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationSettings />
             </ProtectedRoute>
           }
         />

@@ -24,6 +24,13 @@ export class User {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
+
+  /** 강사 회원가입 시 주요 강의 분야 */
+  @Column({ name: 'teacher_expertise', type: 'varchar', length: 120, nullable: true })
+  teacherExpertise: string | null;
+
   @Column({ type: 'text', nullable: true })
   bio: string | null;
 

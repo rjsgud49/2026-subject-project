@@ -30,7 +30,7 @@ export default function FeedbackNew() {
   useRedirectIfNotStudentFeedback();
   const navigate = useNavigate();
   const user = useAppSelector((s) => s.user.user);
-  const { tickets, useTicket } = useFeedbackTickets(!!user);
+  const { tickets, refresh } = useFeedbackTickets(!!user);
 
   const [selectedPlan, setSelectedPlan] = useState<keyof TicketState | null>(null);
   const [jobCategory, setJobCategory] = useState('');
@@ -105,7 +105,7 @@ export default function FeedbackNew() {
         note,
         files,
       });
-      useTicket(selectedPlan);
+      await refresh();
       setShowConfirmModal(false);
       setShowDoneModal(true);
     } catch (err: any) {

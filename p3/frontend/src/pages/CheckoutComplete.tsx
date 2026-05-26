@@ -6,6 +6,12 @@ import { fetchCart } from '../features/cartSlice';
 import Button from '../components/Button';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
+const PLAN_LABELS: Record<string, string> = {
+  doc: '문서 피드백',
+  video: '영상 피드백',
+  premium: '심층 피드백',
+};
+
 export default function CheckoutComplete() {
   const dispatch = useAppDispatch();
   const [params] = useSearchParams();
@@ -18,7 +24,10 @@ export default function CheckoutComplete() {
   const tid = params.get('tid');
   const sandbox = params.get('sandbox') === '1';
   const isFree = params.get('free') === '1';
+  const isFeedback = params.get('type') === 'feedback';
+  const feedbackPlan = params.get('plan');
   const failMsg = params.get('msg');
+  const planLabel = feedbackPlan ? (PLAN_LABELS[feedbackPlan] ?? feedbackPlan) : '';
 
   const courseIds = useMemo(() => {
     const fromQuery = params.get('courseIds');
@@ -74,14 +83,22 @@ export default function CheckoutComplete() {
         )}
       </div>
       <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 10px', color: 'var(--color-neutral-900)' }}>
-        {isFail ? '결제에 실패했습니다' : '결제 및 수강신청이 완료되었습니다'}
+        {isFail
+          ? '결제에 실패했습니다'
+          : isFeedback
+            ? '이용권 구매가 완료되었습니다'
+            : '결제 및 수강신청이 완료되었습니다'}
       </h1>
       <p style={{ color: 'var(--color-neutral-500)', marginBottom: 24, fontSize: 14, lineHeight: 1.7 }}>
         {isFail
           ? decodeURIComponent(failMsg || '결제가 취소되었거나 오류가 발생했습니다.')
-          : courseIds.length
-            ? `${courseIds.length}개 강의가 내 강의실에 추가되었습니다.`
-            : '강의가 내 강의실에 반영되었습니다.'}
+          : isFeedback
+            ? planLabel
+              ? `${planLabel} 3회 이용권이 충전되었습니다.`
+              : '피드백 이용권이 충전되었습니다.'
+            : courseIds.length
+              ? `${courseIds.length}개 강의가 내 강의실에 추가되었습니다.`
+              : '강의가 내 강의실에 반영되었습니다.'}
       </p>
       {(orderId || tid || sandbox || isFree) && (
         <div style={{ fontSize: 12, color: 'var(--color-neutral-400)', marginBottom: 24, lineHeight: 1.6 }}>
@@ -103,14 +120,29 @@ export default function CheckoutComplete() {
         </div>
       )}
       <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <Link to="/dashboard">
-          <Button size="lg">내 강의실 보기</Button>
-        </Link>
-        <Link to={isFail ? '/cart' : '/courses'}>
-          <Button variant="secondary" size="lg">
-            {isFail ? '장바구니로' : '강의 더 둘러보기'}
-          </Button>
-        </Link>
+        {isFeedback ? (
+          <>
+            <Link to="/feedback/new">
+              <Button size="lg">피드백 신청하기</Button>
+            </Link>
+            <Link to={isFail ? '/feedback/buy' : '/feedback'}>
+              <Button variant="secondary" size="lg">
+                {isFail ? '다시 구매하기' : '피드백 홈'}
+              </Button>
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link to="/dashboard">
+              <Button size="lg">내 강의실 보기</Button>
+            </Link>
+            <Link to={isFail ? '/cart' : '/courses'}>
+              <Button variant="secondary" size="lg">
+                {isFail ? '장바구니로' : '강의 더 둘러보기'}
+              </Button>
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

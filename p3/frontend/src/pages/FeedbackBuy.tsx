@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppSelector } from '../hooks/useRedux';
 import { useRedirectIfNotStudentFeedback } from '../hooks/useRedirectIfNotStudentFeedback';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
@@ -7,8 +7,10 @@ import type { TicketState } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { formatPrice } from '../utils/format';
+import { openNicePayCheckout } from '../utils/nicepay';
+import { api } from '../services/api';
 import {
-  FileText, Video, Award, Ticket, Lock, CreditCard,
+  FileText, Video, Award, Ticket, Lock,
   Check, Receipt,
 } from 'lucide-react';
 
@@ -56,19 +58,28 @@ const PLANS: {
   },
 ];
 
-type PayStep = 'select' | 'confirm' | 'processing' | 'done';
+type PayStep = 'select' | 'confirm' | 'processing';
 
 export default function FeedbackBuy() {
   useRedirectIfNotStudentFeedback();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useAppSelector((s) => s.user.user);
-  const { tickets, purchaseTickets, purchaseHistory } = useFeedbackTickets(!!user);
+  const { tickets, purchaseHistory, refresh } = useFeedbackTickets(!!user);
 
   const [selected, setSelected] = useState<keyof TicketState | null>(null);
   const [payStep, setPayStep] = useState<PayStep>('select');
   const [showModal, setShowModal] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const plan = PLANS.find((p) => p.id === selected);
+
+  useEffect(() => {
+    if (searchParams.get('paid') === '1') {
+      refresh();
+      setShowModal(true);
+    }
+  }, [searchParams, refresh]);
 
   if (!user) {
     return (
@@ -83,15 +94,22 @@ export default function FeedbackBuy() {
     );
   }
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!selected) return;
+    setCheckingOut(true);
     setPayStep('processing');
-    // 결제 처리 시뮬레이션
-    setTimeout(() => {
-      purchaseTickets(selected);
-      setPayStep('done');
-      setShowModal(true);
-    }, 1800);
+    try {
+      const prep = await api.payments.prepareFeedback(selected);
+      await openNicePayCheckout(prep, {
+        name: user?.name,
+        email: user?.email,
+      });
+    } catch (e) {
+      setPayStep('confirm');
+      window.alert(e instanceof Error ? e.message : '결제를 시작할 수 없습니다.');
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   return (
@@ -237,38 +255,27 @@ export default function FeedbackBuy() {
             </div>
           </div>
 
-          {/* 결제 수단 선택 (UI mock) */}
-          <div style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: 24 }}>
-            <div style={{ fontWeight: 700, marginBottom: 14 }}>결제 수단</div>
-            {[
-              { id: 'card', label: '신용/체크카드' },
-              { id: 'kakao', label: '카카오페이' },
-              { id: 'toss', label: '토스페이' },
-            ].map((m, i) => (
-              <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', cursor: 'pointer', borderTop: i > 0 ? '1px solid var(--color-neutral-200)' : undefined }}>
-                <input type="radio" name="payMethod" defaultChecked={i === 0} style={{ accentColor: plan.accent }} />
-                <CreditCard size={16} color="var(--color-neutral-400)" />
-                <span style={{ fontSize: 14 }}>{m.label}</span>
-              </label>
-            ))}
-          </div>
+          <p style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginBottom: 20, lineHeight: 1.6 }}>
+            나이스페이 결제창에서 카드·간편결제 등을 선택할 수 있습니다. (샌드박스 · 실제 과금 없음)
+          </p>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="secondary" onClick={() => setPayStep('select')} style={{ flex: 1, justifyContent: 'center' }}>
+            <Button variant="secondary" onClick={() => setPayStep('select')} style={{ flex: 1, justifyContent: 'center' }} disabled={checkingOut}>
               이전
             </Button>
-            <Button onClick={handlePay} style={{ flex: 2, justifyContent: 'center', padding: '14px 0', fontSize: 15 }}>
-              {formatPrice(plan.price)} 결제하기
+            <Button onClick={handlePay} disabled={checkingOut} style={{ flex: 2, justifyContent: 'center', padding: '14px 0', fontSize: 15 }}>
+              {checkingOut ? '결제창 연결 중…' : `${formatPrice(plan.price)} 나이스페이 결제`}
             </Button>
           </div>
         </div>
       )}
 
-      {/* 결제 처리 중 */}
+      {/* 결제창 대기 */}
       {payStep === 'processing' && (
         <div style={{ textAlign: 'center', padding: '80px 0' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', border: '4px solid var(--color-primary-200)', borderTopColor: 'var(--color-primary-500)', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
-          <p style={{ fontSize: 16, color: 'var(--color-neutral-500)' }}>결제를 처리하고 있습니다…</p>
+          <p style={{ fontSize: 16, color: 'var(--color-neutral-500)' }}>나이스페이 결제창을 여는 중입니다…</p>
+          <p style={{ fontSize: 13, color: 'var(--color-neutral-400)', marginTop: 8 }}>창이 보이지 않으면 팝업 차단을 해제해 주세요.</p>
         </div>
       )}
 

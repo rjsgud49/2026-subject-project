@@ -12,6 +12,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { AdminService } from './admin.service';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { CurrentUser, AuthUser } from '../common/decorators/current-user.decorator';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -31,10 +32,11 @@ export class AdminController {
 
   @Patch('users/:id/role')
   updateRole(
+    @CurrentUser() admin: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateUserRoleDto,
   ) {
-    return this.adminService.updateUserRole(id, dto.role);
+    return this.adminService.updateUserRole(admin.id, id, dto.role);
   }
 
   @Get('courses')

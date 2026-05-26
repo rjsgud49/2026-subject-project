@@ -363,6 +363,185 @@ button { font-family: inherit; }
   to { transform: rotate(360deg); }
 }
 
+/* ── 랜딩 텍스트 모션 ── */
+.landing-hero-badge {
+  animation: landing-badge-float 4s ease-in-out infinite;
+}
+
+@keyframes landing-badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.landing-word-cycle {
+  display: inline;
+  color: var(--color-primary-600);
+}
+
+.landing-word-cycle__word {
+  display: inline;
+  font-weight: 800;
+  color: var(--color-primary-600);
+}
+
+.landing-word-cycle__word--in {
+  animation: landing-word-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-word-cycle__word--out {
+  animation: landing-word-out 0.38s cubic-bezier(0.55, 0, 1, 0.45) both;
+  color: var(--color-primary-600);
+  -webkit-text-fill-color: currentColor;
+}
+
+@keyframes landing-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes landing-word-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+    filter: blur(4px);
+  }
+}
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-hero-title {
+  margin: 0 0 20px;
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 800;
+  color: var(--color-neutral-900);
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+
+.landing-hero-title__tail {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.28em;
+  white-space: nowrap;
+}
+
+.landing-hero-cta {
+  opacity: 0;
+  animation: landing-cta-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+}
+
+@keyframes landing-cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-kw {
+  font-weight: 700;
+}
+
+.landing-kw--blue {
+  color: var(--color-primary-700);
+}
+
+.landing-kw--green {
+  color: var(--color-success-700);
+}
+
+.landing-kw--violet {
+  color: #5b21b6;
+}
+
+.landing-kw--amber {
+  color: #b45309;
+}
+
+.landing-kw--rose {
+  color: #be123c;
+}
+
+.landing-stat-value {
+  display: inline-block;
+  animation: landing-stat-pop 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+@keyframes landing-stat-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.landing-feature-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.landing-feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-200) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-badge,
+  .landing-word-cycle__word,
+  .landing-word-cycle__word--in,
+  .landing-word-cycle__word--out,
+  .landing-reveal,
+  .landing-hero-cta,
+  .landing-stat-value {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .landing-reveal,
+  .landing-reveal--visible,
+  .landing-hero-cta {
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-word-cycle__word {
+    color: var(--color-primary-600);
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
 /* ── CTA 링크 버튼 ── */
 .btn-cta-primary {
   display: inline-flex;
@@ -461,4 +640,19 @@ button { font-family: inherit; }
 .teacher-profile-quill .ql-container {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   background: var(--color-neutral-0);
+}
+
+/* 나이스페이 결제창 — 레이어/스크롤로 하단 UI 잘림 방지 */
+body.nicepay-checkout-active {
+  overflow: auto !important;
+}
+
+body.nicepay-checkout-active header {
+  /* 결제 레이어(z-index 11000) 아래로 — 겹침만 방지 */
+  z-index: 1 !important;
+}
+
+body.nicepay-checkout-active iframe[src*='nicepay'],
+body.nicepay-checkout-active iframe[src*='pay.nicepay'] {
+  max-height: calc(100dvh - 32px) !important;
 }

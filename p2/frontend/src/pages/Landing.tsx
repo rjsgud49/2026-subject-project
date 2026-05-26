@@ -359,12 +359,9 @@ export default function Landing() {
       {/* ── CTA 배너 ── */}
       <section style={{ padding: '64px 24px', background: 'var(--color-primary-600)', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>
-            지금 바로 시작하세요
+          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 32, letterSpacing: '-0.02em' }}>
+            회원가입
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
-            가입 후 무료 강의를 먼저 경험해보세요.
-          </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link
               to="/signup"

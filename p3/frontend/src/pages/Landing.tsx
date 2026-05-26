@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { formatPrice } from '../utils/format';
 import CourseThumbnail from '../components/CourseThumbnail';
+import {
+  AnimatedWordCycle,
+  KeywordHighlight,
+  LandingReveal,
+} from '../components/landing/LandingMotion';
 import {
   Globe, Server, Code2, Database, Cloud, Smartphone, Shield, BookOpen,
   Users, BarChart2, MessageCircle, Users2, Landmark, Megaphone,
@@ -39,12 +44,21 @@ const FEATURES: { Icon: LucideIcon; title: string; desc: string }[] = [
   { Icon: MessageCircle, title: 'Q&A 질문 답변',     desc: '강의 내 Q&A로 궁금한 점을 즉시 해결하고 학습 효율을 높이세요.' },
 ];
 
-const REVIEWS = [
-  { name: '김○○', role: '카카오 합격',     rating: 5, text: '기술면접 준비를 1달 만에 끝냈어요. 강의 구성이 체계적이고 실전 질문 위주라 정말 도움이 됐습니다.' },
-  { name: '이○○', role: '삼성 SDS 합격',   rating: 5, text: 'CS 기초부터 시스템 설계까지 빠짐없이 커버됩니다. 덕분에 최종 합격했어요!' },
-  { name: '박○○', role: '네이버 합격',     rating: 5, text: '영어면접이 걱정이었는데 영어면접 강의 덕에 자신감을 얻었습니다. 강추!' },
-  { name: '최○○', role: '현대자동차 합격', rating: 5, text: '인성면접 준비를 어디서 해야 할지 몰랐는데 이 강의 하나로 해결했습니다.' },
+const FALLBACK_REVIEWS = [
+  { id: 'seed-1', display_name: '김○○', tagline: '카카오 합격', rating: 5, text: '기술면접 준비를 1달 만에 끝냈어요. 강의 구성이 체계적이고 실전 질문 위주라 정말 도움이 됐습니다.' },
+  { id: 'seed-2', display_name: '이○○', tagline: '삼성 SDS 합격', rating: 5, text: 'CS 기초부터 시스템 설계까지 빠짐없이 커버됩니다. 덕분에 최종 합격했어요!' },
+  { id: 'seed-3', display_name: '박○○', tagline: '네이버 합격', rating: 5, text: '영어면접이 걱정이었는데 영어면접 강의 덕에 자신감을 얻었습니다. 강추!' },
+  { id: 'seed-4', display_name: '최○○', tagline: '현대자동차 합격', rating: 5, text: '인성면접 준비를 어디서 해야 할지 몰랐는데 이 강의 하나로 해결했습니다.' },
 ];
+
+type PublicReview = {
+  id: number | string;
+  display_name: string;
+  tagline?: string | null;
+  rating: number;
+  text: string;
+  created_at?: string;
+};
 
 const STATS = [
   { value: '309+', label: '전체 강의 수' },
@@ -57,12 +71,64 @@ const GROUPS = ['기술면접', '면접 유형', '직무별'] as const;
 
 export default function Landing() {
   const [featured, setFeatured] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<PublicReview[]>(FALLBACK_REVIEWS);
+  const [rvName, setRvName] = useState('');
+  const [rvTagline, setRvTagline] = useState('');
+  const [rvRating, setRvRating] = useState(5);
+  const [rvText, setRvText] = useState('');
+  const [rvSubmitting, setRvSubmitting] = useState(false);
+  const [rvError, setRvError] = useState('');
+  const [rvDone, setRvDone] = useState(false);
 
   useEffect(() => {
     (api as any).courses.list({ page: 1, size: 8, sort: 'popular' })
       .then((res: any) => setFeatured(res?.items ?? []))
       .catch(() => {});
   }, []);
+
+  const loadReviews = async () => {
+    try {
+      const rows = await (api as any).reviews.list(12);
+      const arr = Array.isArray(rows) ? rows : [];
+      if (arr.length) setReviews(arr);
+    } catch {
+      // fallback 유지
+    }
+  };
+
+  useEffect(() => {
+    loadReviews();
+  }, []);
+
+  const canSubmitReview = useMemo(() => {
+    const nameOk = rvName.trim().length >= 1 && rvName.trim().length <= 30;
+    const textOk = rvText.trim().length >= 5 && rvText.trim().length <= 240;
+    const ratingOk = Number.isFinite(rvRating) && rvRating >= 1 && rvRating <= 5;
+    return nameOk && textOk && ratingOk;
+  }, [rvName, rvText, rvRating]);
+
+  const submitReview = async () => {
+    setRvError('');
+    setRvDone(false);
+    if (!canSubmitReview) return;
+    setRvSubmitting(true);
+    try {
+      await (api as any).reviews.create({
+        display_name: rvName.trim(),
+        tagline: rvTagline.trim() ? rvTagline.trim() : undefined,
+        rating: Number(rvRating),
+        text: rvText.trim(),
+      });
+      setRvDone(true);
+      setRvText('');
+      setRvTagline('');
+      await loadReviews();
+    } catch (e: any) {
+      setRvError(e?.message || '리뷰 등록에 실패했습니다.');
+    } finally {
+      setRvSubmitting(false);
+    }
+  };
 
   return (
     <div style={{ background: 'var(--color-neutral-50)' }}>
@@ -76,39 +142,38 @@ export default function Landing() {
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '4px 12px',
-              background: 'var(--color-primary-50)',
-              color: 'var(--color-primary-700)',
-              borderRadius: 'var(--radius-full)',
-              fontSize: 13, fontWeight: 600, marginBottom: 24,
-            }}
-          >
-            <GraduationCap size={14} />
-            면접 준비의 새로운 기준
-          </span>
-          <h1
-            style={{
-              fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 800,
-              color: 'var(--color-neutral-900)', lineHeight: 1.2,
-              letterSpacing: '-0.03em', marginBottom: 20,
-            }}
-          >
-            취업 면접,<br />
-            <span style={{ color: 'var(--color-primary-500)' }}>전략적으로</span> 준비하세요
-          </h1>
-          <p
-            style={{
+          <LandingReveal delayMs={0}>
+            <span
+              className="landing-hero-badge"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '4px 12px',
+                background: 'var(--color-primary-50)',
+                color: 'var(--color-primary-700)',
+                borderRadius: 'var(--radius-full)',
+                fontSize: 13, fontWeight: 600, marginBottom: 24,
+              }}
+            >
+              <GraduationCap size={14} />
+              면접 준비의 새로운 기준
+            </span>
+          </LandingReveal>
+          <LandingReveal as="h1" delayMs={120} className="landing-hero-title">
+            취업 면접,
+            <br />
+            <span className="landing-hero-title__tail">
+              <AnimatedWordCycle />
+              <span>준비하세요</span>
+            </span>
+          </LandingReveal>
+          <LandingReveal as="p" delayMs={280} style={{
               fontSize: 18, color: 'var(--color-neutral-500)',
               lineHeight: 1.7, maxWidth: 540, margin: '0 auto 36px',
-            }}
-          >
+            }}>
             현직 전문가의 강의로 기술면접부터 인성면접까지,<br />
-            맞춤형 커리큘럼으로 빠르게 합격을 경험하세요.
-          </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <KeywordHighlight text="맞춤형 커리큘럼으로 빠르게 합격을 경험하세요." />
+          </LandingReveal>
+          <div className="landing-hero-cta" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/courses" className="btn-cta-primary">강의 둘러보기</Link>
             <Link to="/signup" className="btn-cta-secondary">무료로 시작하기</Link>
           </div>
@@ -124,16 +189,27 @@ export default function Landing() {
           }}
         >
           {STATS.map((s, i) => (
-            <div
+            <LandingReveal
               key={s.label}
+              as="div"
+              whenVisible
+              delayMs={i * 80}
               style={{
                 padding: '28px 20px', textAlign: 'center',
                 borderLeft: i > 0 ? '1px solid var(--color-neutral-200)' : undefined,
               }}
             >
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--color-primary-600)', letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div
+                className="landing-stat-value"
+                style={{
+                  fontSize: 28, fontWeight: 800, color: 'var(--color-primary-600)',
+                  letterSpacing: '-0.02em', animationDelay: `${i * 0.1}s`,
+                }}
+              >
+                {s.value}
+              </div>
               <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 4 }}>{s.label}</div>
-            </div>
+            </LandingReveal>
           ))}
         </div>
       </section>
@@ -141,10 +217,12 @@ export default function Landing() {
       {/* ── 카테고리 ── */}
       <section style={{ padding: '64px 24px' }}>
         <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
-          <div style={{ marginBottom: 40 }}>
+          <LandingReveal as="div" whenVisible delayMs={0} style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-neutral-900)', marginBottom: 8 }}>카테고리별 강의</h2>
-            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>분야와 면접 유형에 맞는 강의를 골라보세요.</p>
-          </div>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>
+              분야와 면접 유형에 맞는 <KeywordHighlight text="맞춤형 강의를 체계적으로 골라보세요." />
+            </p>
+          </LandingReveal>
 
           {GROUPS.map((group) => {
             const items = CATEGORIES.filter((c) => c.group === group);
@@ -273,14 +351,20 @@ export default function Landing() {
       {/* ── 플랫폼 특징 ── */}
       <section style={{ padding: '64px 24px', background: 'var(--color-neutral-0)', borderTop: '1px solid var(--color-neutral-200)' }}>
         <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+          <LandingReveal as="div" whenVisible style={{ textAlign: 'center', marginBottom: 48 }}>
             <h2 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>왜 면접인강인가요?</h2>
-            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>취업 준비에 꼭 필요한 것만 담았습니다.</p>
-          </div>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>
+              취업 준비에 <KeywordHighlight text="꼭 필요한 것만 전략적으로 담았습니다." />
+            </p>
+          </LandingReveal>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
-            {FEATURES.map((f) => (
-              <div
+            {FEATURES.map((f, i) => (
+              <LandingReveal
                 key={f.title}
+                as="div"
+                whenVisible
+                delayMs={i * 90}
+                className="landing-feature-card"
                 style={{
                   padding: '28px 24px',
                   background: 'var(--color-neutral-50)',
@@ -299,8 +383,10 @@ export default function Landing() {
                   <f.Icon size={24} color="var(--color-primary-600)" />
                 </div>
                 <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px', color: 'var(--color-neutral-900)' }}>{f.title}</h3>
-                <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0, lineHeight: 1.6 }}>{f.desc}</p>
-              </div>
+                <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0, lineHeight: 1.6 }}>
+                  <KeywordHighlight text={f.desc} />
+                </p>
+              </LandingReveal>
             ))}
           </div>
         </div>
@@ -309,14 +395,19 @@ export default function Landing() {
       {/* ── 수강 후기 ── */}
       <section style={{ padding: '64px 24px' }}>
         <div style={{ maxWidth: 'var(--max-w)', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <LandingReveal as="div" whenVisible style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 8px' }}>수강생 후기</h2>
-            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>합격한 선배들의 이야기를 들어보세요.</p>
-          </div>
+            <p style={{ fontSize: 15, color: 'var(--color-neutral-500)', margin: 0 }}>
+              <KeywordHighlight text="합격한 선배들의 실전 이야기를 들어보세요." />
+            </p>
+          </LandingReveal>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 20 }}>
-            {REVIEWS.map((r) => (
-              <div
-                key={r.name}
+            {reviews.map((r: any, i) => (
+              <LandingReveal
+                key={String(r.id ?? i)}
+                as="div"
+                whenVisible
+                delayMs={i * 100}
                 style={{
                   padding: '24px',
                   background: 'var(--color-neutral-0)',
@@ -333,7 +424,7 @@ export default function Landing() {
                   ))}
                 </div>
                 <p style={{ fontSize: 14, color: 'var(--color-neutral-700)', lineHeight: 1.7, margin: '0 0 16px' }}>
-                  "{r.text}"
+                  &ldquo;<KeywordHighlight text={String(r.text ?? '')} />&rdquo;
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{
@@ -343,15 +434,87 @@ export default function Landing() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 14, fontWeight: 700,
                   }}>
-                    {r.name[0]}
+                    {String(r.display_name ?? '익명').slice(0, 1)}
                   </div>
                   <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-800)' }}>{r.name}</p>
-                    <p style={{ margin: 0, fontSize: 12, color: 'var(--color-success-600)', fontWeight: 500 }}>{r.role}</p>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-neutral-800)' }}>{String(r.display_name ?? '익명')}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--color-success-600)', fontWeight: 500 }}>{String(r.tagline ?? '')}</p>
                   </div>
                 </div>
-              </div>
+              </LandingReveal>
             ))}
+          </div>
+
+          {/* ── 리뷰 남기기 ── */}
+          <div style={{ marginTop: 28 }}>
+            <LandingReveal as="div" whenVisible>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--color-neutral-900)' }}>리뷰 남기기</h3>
+                  <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--color-neutral-500)' }}>
+                    수강 후기를 남겨주시면 다른 수강생에게 큰 도움이 됩니다.
+                  </p>
+                </div>
+                {rvDone && (
+                  <span style={{ fontSize: 12, color: 'var(--color-success-700)', background: 'var(--color-success-50)', border: '1px solid var(--color-success-200)', padding: '6px 10px', borderRadius: 999 }}>
+                    등록 완료! 고맙습니다.
+                  </span>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <input
+                    className="ui-input"
+                    placeholder="표시 이름 (예: 김○○)"
+                    value={rvName}
+                    onChange={(e) => setRvName(e.target.value)}
+                    style={{ flex: '1 1 220px' }}
+                  />
+                  <input
+                    className="ui-input"
+                    placeholder="한줄 소개 (예: 카카오 합격)"
+                    value={rvTagline}
+                    onChange={(e) => setRvTagline(e.target.value)}
+                    style={{ flex: '1 1 220px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
+                  <select className="ui-select" value={rvRating} onChange={(e) => setRvRating(Number(e.target.value))} style={{ minWidth: 120 }}>
+                    <option value={5}>★★★★★ (5)</option>
+                    <option value={4}>★★★★☆ (4)</option>
+                    <option value={3}>★★★☆☆ (3)</option>
+                    <option value={2}>★★☆☆☆ (2)</option>
+                    <option value={1}>★☆☆☆☆ (1)</option>
+                  </select>
+                </div>
+              </div>
+
+              <textarea
+                className="ui-textarea"
+                placeholder="후기를 5자 이상 입력해 주세요. (최대 240자)"
+                value={rvText}
+                onChange={(e) => setRvText(e.target.value)}
+                style={{ marginTop: 12, width: '100%' }}
+                rows={4}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 12, color: rvText.trim().length > 240 ? 'var(--color-error-600)' : 'var(--color-neutral-400)' }}>
+                  {rvText.trim().length}/240
+                  {rvError && <span style={{ marginLeft: 10, color: 'var(--color-error-600)' }}>{rvError}</span>}
+                </div>
+                <button
+                  className="btn-cta-primary"
+                  onClick={submitReview}
+                  disabled={!canSubmitReview || rvSubmitting}
+                  style={{ opacity: !canSubmitReview || rvSubmitting ? 0.6 : 1, pointerEvents: !canSubmitReview || rvSubmitting ? 'none' : 'auto' }}
+                >
+                  {rvSubmitting ? '등록 중…' : '리뷰 등록'}
+                </button>
+              </div>
+            </LandingReveal>
           </div>
         </div>
       </section>
@@ -359,12 +522,9 @@ export default function Landing() {
       {/* ── CTA 배너 ── */}
       <section style={{ padding: '64px 24px', background: 'var(--color-primary-600)', textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 12, letterSpacing: '-0.02em' }}>
-            지금 바로 시작하세요
+          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginBottom: 32, letterSpacing: '-0.02em' }}>
+            회원가입
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginBottom: 32 }}>
-            가입 후 무료 강의를 먼저 경험해보세요.
-          </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link
               to="/signup"

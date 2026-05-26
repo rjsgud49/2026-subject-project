@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from '../entities/user.entity';
 import { Course } from '../entities/course.entity';
 import { Enrollment } from '../entities/enrollment.entity';
+import { AuditService } from '../ops/audit.service';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +13,7 @@ export class AdminService {
     @InjectRepository(Course) private readonly courseRepo: Repository<Course>,
     @InjectRepository(Enrollment)
     private readonly enrollRepo: Repository<Enrollment>,
+    private readonly audit: AuditService,
   ) {}
 
   async stats() {
@@ -42,11 +44,19 @@ export class AdminService {
     return rows;
   }
 
-  async updateUserRole(userId: number, role: UserRole) {
+  async updateUserRole(adminId: number, userId: number, role: UserRole) {
     const u = await this.userRepo.findOne({ where: { id: userId } });
     if (!u) throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    const prev = u.role;
     u.role = role;
     await this.userRepo.save(u);
+    await this.audit.log({
+      userId: adminId,
+      action: 'user.role_change',
+      resource: 'user',
+      resourceId: userId,
+      meta: { from: prev, to: role },
+    });
     return { id: u.id, email: u.email, name: u.name, role: u.role };
   }
 

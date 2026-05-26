@@ -5,24 +5,65 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import type { Express } from 'express';
 import { Course } from '../entities/course.entity';
+import { Enrollment } from '../entities/enrollment.entity';
 import { User } from '../entities/user.entity';
 import { TeacherRevenueLine } from '../entities/teacher-revenue-line.entity';
 import { CreateCourseDto } from '../courses/dto/create-course.dto';
 import { UpdateCourseDto } from '../courses/dto/update-course.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { PLATFORM_FEE_RATE } from '../settlement.constants';
+import {
+  PLATFORM_FEE_RATE,
+  splitEnrollmentRevenue,
+} from '../settlement.constants';
 
 @Injectable()
 export class TeacherService {
   constructor(
     @InjectRepository(Course) private readonly courseRepo: Repository<Course>,
+    @InjectRepository(Enrollment)
+    private readonly enrollRepo: Repository<Enrollment>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(TeacherRevenueLine)
     private readonly revenueRepo: Repository<TeacherRevenueLine>,
   ) {}
+
+  /** 수강 행은 있는데 매출 원장이 없으면 집계·최근 구매 목록이 0으로 보이므로 보정한다. */
+  private async backfillMissingRevenueLines(
+    instructorId: number,
+    courseIds: number[],
+  ) {
+    if (!courseIds.length) return;
+    const enrollments = await this.enrollRepo.find({
+      where: { courseId: In(courseIds) },
+      relations: ['course'],
+    });
+    for (const en of enrollments) {
+      if (!en.course) continue;
+      if (Number(en.course.instructorId) !== Number(instructorId)) continue;
+      const dup = await this.revenueRepo.findOne({
+        where: { enrollmentId: en.id },
+      });
+      if (dup) continue;
+      const { gross, platformFee, net } = splitEnrollmentRevenue(
+        en.course.price,
+      );
+      await this.revenueRepo.save(
+        this.revenueRepo.create({
+          teacherId: en.course.instructorId,
+          courseId: en.courseId,
+          enrollmentId: en.id,
+          priceSnapshot: en.course.price,
+          grossAmount: gross,
+          platformFee,
+          netAmount: net,
+          enrolledAt: en.enrolledAt,
+        }),
+      );
+    }
+  }
 
   private parseCurriculumJson(
     json: string | null,
@@ -54,6 +95,8 @@ export class TeacherService {
       where: { instructorId },
       order: { id: 'DESC' },
     });
+    const courseIds = courses.map((c) => Number(c.id));
+    await this.backfillMissingRevenueLines(instructorId, courseIds);
     const lines = await this.revenueRepo.find({
       where: { teacherId: instructorId },
     });
@@ -128,6 +171,13 @@ export class TeacherService {
       enrolled_at: Date;
     }[];
   }> {
+    const myCourseIds = (
+      await this.courseRepo.find({
+        where: { instructorId: teacherId },
+        select: ['id'],
+      })
+    ).map((c) => Number(c.id));
+    await this.backfillMissingRevenueLines(teacherId, myCourseIds);
     const p = Math.max(1, page);
     const s = Math.min(100, Math.max(1, size));
     const [rows, total] = await this.revenueRepo.findAndCount({

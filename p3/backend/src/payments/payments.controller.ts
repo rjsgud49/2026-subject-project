@@ -17,6 +17,7 @@ import {
 } from '../common/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
 import { PreparePaymentDto } from './dto/prepare-payment.dto';
+import { PrepareFeedbackDto } from './dto/prepare-feedback.dto';
 import { NiceAuthReturnBody } from './nicepay.service';
 
 @Controller('payments')
@@ -39,6 +40,16 @@ export class PaymentsController {
   @Roles('student')
   prepare(@CurrentUser() user: AuthUser, @Body() dto: PreparePaymentDto) {
     return this.paymentsService.prepare(user.id, dto.course_ids);
+  }
+
+  @Post('prepare-feedback')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('student')
+  prepareFeedback(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: PrepareFeedbackDto,
+  ) {
+    return this.paymentsService.prepareFeedback(user.id, dto.plan_id);
   }
 
   @Post('free-checkout')

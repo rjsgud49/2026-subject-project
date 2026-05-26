@@ -6,9 +6,14 @@ import { Course } from '../entities/course.entity';
 import { QuestionsService } from './questions.service';
 import { QuestionsController } from './questions.controller';
 import { AuthModule } from '../auth/auth.module';
+import { OpsModule } from '../ops/ops.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Question, Answer, Course]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([Question, Answer, Course]),
+    AuthModule,
+    OpsModule,
+  ],
   controllers: [QuestionsController],
   providers: [QuestionsService],
 })

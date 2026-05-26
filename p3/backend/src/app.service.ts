@@ -1,8 +1,23 @@
 import { Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class AppService {
-  health() {
-    return { ok: true, service: 'p2-lms', ts: new Date().toISOString() };
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+
+  async health() {
+    let db = 'ok';
+    try {
+      await this.dataSource.query('SELECT 1');
+    } catch {
+      db = 'error';
+    }
+    return {
+      ok: db === 'ok',
+      service: 'p3-lms',
+      db,
+      ts: new Date().toISOString(),
+    };
   }
 }

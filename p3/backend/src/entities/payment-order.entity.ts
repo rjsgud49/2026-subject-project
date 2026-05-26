@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 
 export type PaymentOrderStatus = 'pending' | 'paid' | 'failed';
+export type PaymentOrderType = 'course' | 'feedback';
 
 @Entity('p3_payment_orders')
 export class PaymentOrder {
@@ -21,8 +22,15 @@ export class PaymentOrder {
   @Column()
   userId: number;
 
-  /** JSON array of course ids */
-  @Column({ type: 'text' })
+  @Column({ type: 'varchar', length: 20, default: 'course' })
+  orderType: PaymentOrderType;
+
+  /** feedback 주문 시 doc | video | premium */
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  feedbackPlan: string | null;
+
+  /** JSON array of course ids (course 주문) */
+  @Column({ type: 'text', default: '[]' })
   courseIdsJson: string;
 
   @Column({ type: 'int' })

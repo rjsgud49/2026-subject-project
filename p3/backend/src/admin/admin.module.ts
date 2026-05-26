@@ -4,12 +4,17 @@ import { User } from '../entities/user.entity';
 import { Course } from '../entities/course.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { AuthModule } from '../auth/auth.module';
+import { OpsModule } from '../ops/ops.module';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Course, Enrollment]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Course, Enrollment]),
+    AuthModule,
+    OpsModule,
+  ],
   controllers: [AdminController],
   providers: [AdminService, RolesGuard],
 })

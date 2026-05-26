@@ -1,0 +1,27 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/2026-subject-project
+            git pull origin main
+            cd p3/backend
+            npm install
+            npm run build
+            pm2 restart p3-backend --update-env
+            cd ../frontend
+            npm install
+            npm run build
+            echo "배포 완료"

@@ -10,9 +10,15 @@ import {
   EnrollmentVideoProgress,
   TeacherRevenueLine,
   Feedback,
+  FeedbackTicketWallet,
+  Review,
   Question,
   Answer,
   PaymentOrder,
+  StudyNote,
+  NotificationSubscription,
+  AuditLog,
+  WebhookEndpoint,
 } from './entities';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
@@ -24,6 +30,8 @@ import { FeedbackModule } from './feedback/feedback.module';
 import { QuestionsModule } from './questions/questions.module';
 import { FilesModule } from './files/files.module';
 import { PaymentsModule } from './payments/payments.module';
+import { OpsModule } from './ops/ops.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -42,9 +50,15 @@ import { PaymentsModule } from './payments/payments.module';
         EnrollmentVideoProgress,
         TeacherRevenueLine,
         Feedback,
+        FeedbackTicketWallet,
+        Review,
         Question,
         Answer,
         PaymentOrder,
+        StudyNote,
+        NotificationSubscription,
+        AuditLog,
+        WebhookEndpoint,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
@@ -61,6 +75,8 @@ import { PaymentsModule } from './payments/payments.module';
     QuestionsModule,
     FilesModule,
     PaymentsModule,
+    ReviewsModule,
+    OpsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

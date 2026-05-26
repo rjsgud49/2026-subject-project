@@ -1,36 +1,40 @@
-# P2 — 역할 분리 LMS (관리자 · 강사 · 학생) + JWT 인증
+# P3 — 운영형 LMS (결제 · 알림 · Webhook · 모니터링)
 
-README의 **project2** 범위: 역할 분리와 인증 전체(백엔드 + 프론트)를 구현했습니다. **백엔드 포트는 `p2/backend/.env`의 `PORT`**(예시·기본값 3000), **프론트는 5174**입니다. P1과 같이 띄울 때는 P1과 포트가 겹치지 않게 `PORT`만 조정하면 됩니다.
+P2 역할 분리 LMS에 **나이스페이 결제**, **이벤트 알림(이메일/Discord)**, **Outbound Webhook**, **감사 로그·메트릭**, **스케줄 작업**, **DB 학습노트**를 추가한 프로젝트입니다.
 
-## 구성
+- 백엔드: `p3/backend` — 기본 포트 **3000** (`.env`의 `PORT`)
+- 프론트: `p3/frontend` — **5174** (Vite, `/api` 프록시)
 
-| 역할 | 경로 | 기능 |
-|------|------|------|
-| **관리자** | `/admin` | 대시보드 통계, 전체 회원·역할 변경, 전체 강의(비공개 포함) 조회 |
-| **강사** | `/teacher` | 대시보드, 내 강의 CRUD, 공개 여부, 프로필(이름·소개) 수정, 학생 피드백 질의·답변 |
-| **학생** | `/student` | 대시보드, 공개 강의 탐색, 수강 신청·내 수강·수강 취소, 피드백 요청·확인 |
-| 공개 | `/`, `/courses`, `/courses/:id` | 홈, 강의 목록·상세(비로그인 조회, 수강은 학생 로그인 시) |
-| 인증 | `/login`, `/signup` | JWT 로그인, 학생 전용 회원가입 |
+## 주요 기능
+
+| 영역 | 설명 |
+|------|------|
+| 결제 | 장바구니 → 나이스페이 샌드박스 결제 → 수강 등록 (`payments/`) |
+| 알림 | `/settings/notifications` — 이벤트별 이메일·Discord 구독 |
+| Webhook | 관리자 `/admin/ops` — HMAC 서명(`X-P3-Signature`) outbound |
+| 운영 | 메트릭, 감사 로그, pending 결제 24h 만료, 미답변 피드백 일일 알림 |
+| 학습 | 내 강의실 3탭(강의 / 학습노트 / Q&A), 노트는 DB 저장 |
 
 ## 사전 준비
 
-1. PostgreSQL에 DB 생성: `CREATE DATABASE p2_lms;`
-2. `p2/backend/.env` — `.env.example`을 복사해 수정
+1. PostgreSQL: `CREATE DATABASE p2_lms;` (P2·P3 동일 DB명 사용 가능)
+2. `p3/backend/.env` — `p3/backend/.env.example` 복사 후 수정
+3. 나이스페이 샌드박스 키(선택): 없으면 무료 강의·`free-checkout`만 사용
 
 ## 백엔드
 
 ```bash
-cd p2/backend
+cd p3/backend
 npm install
-npm run seed   # 데모 계정·강의·샘플 수강
+npm run seed
 npm run start:dev
 ```
 
-- API 베이스: `http://localhost:<PORT>/api/v1` (`PORT`는 `.env`, 기본 3000)
-- 헬스: `GET /api/v1/health`
-- 인증: `POST /api/v1/auth/login`, `POST /api/v1/auth/signup`, `GET /api/v1/auth/me` (Bearer)
+- API: `http://localhost:<PORT>/api/v1`
+- 헬스: `GET /api/v1/health` (DB ping 포함)
+- 이벤트 목록: `GET /api/v1/ops/events`
 
-### 시드 데모 계정
+### 시드 계정 (P2와 동일)
 
 | 이메일 | 비밀번호 | 역할 |
 |--------|----------|------|
@@ -38,19 +42,43 @@ npm run start:dev
 | teacher@p2.local | teacher123 | teacher |
 | student@p2.local | student123 | student |
 
+### 환경 변수 (추가)
+
+| 변수 | 용도 |
+|------|------|
+| `NICEPAY_*` | 결제 샌드박스 |
+| `SMTP_HOST` 등 | 이메일 알림 (없으면 서버 로그로 대체) |
+| `P3_WEBHOOK_SIGNING_SECRET` | 기본 outbound 서명(엔드포인트별 secret 우선) |
+
 ## 프론트엔드
 
 ```bash
-cd p2/frontend
+cd p3/frontend
 npm install
 npm run dev
 ```
 
-브라우저: `http://localhost:5174` — Vite가 `/api`를 백엔드로 프록시합니다. **`p2/backend/.env`의 `PORT`를 읽어** `http://127.0.0.1:<PORT>`로 맞춥니다(파일이 없으면 기본 3000). 전역 덮어쓰기는 `p2/frontend/.env`의 `VITE_API_PROXY_TARGET` 전체 URL.
+브라우저: `http://localhost:5174`
 
-**터미널에 `http proxy error` / `ECONNREFUSED`가 뜨면** (1) 백엔드 터미널에 찍힌 `API http://127.0.0.1:…/api/v1` 포트와 (2) Vite 기동 시 `[vite] /api → …` 포트가 같은지 확인하세요. 백엔드 없이만 쓸 때는 `p2/frontend/.env`에 `VITE_USE_MOCK=true`.
+- JWT 저장 키: `p3_access_token`
+- 관리자 운영: `/admin/ops`
+- 알림 설정: `/settings/notifications`
+
+## Docker (로컬 DB)
+
+```bash
+cd p3
+docker compose up -d
+```
+
+PostgreSQL만 띄웁니다. 앱은 위 npm 명령으로 실행하세요.
 
 ## 기술 스택
 
-- 백엔드: NestJS 10, TypeORM, PostgreSQL, bcrypt, **JWT (Bearer)**, 역할 가드(`admin` / `teacher` / `student`)
-- 프론트: React 18, TypeScript, Vite, React Router, Context 기반 인증 상태
+- 백엔드: NestJS 10, TypeORM, PostgreSQL, JWT, `@nestjs/schedule`, helmet, nodemailer
+- 프론트: React 18, TypeScript, Vite, React Router
+- 결제: 나이스페이 Server 승인(S2) 샌드박스
+
+## 문서
+
+- `docs/p3/기획서.md` — P3 범위·이벤트·API 요약

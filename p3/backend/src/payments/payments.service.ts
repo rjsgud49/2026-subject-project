@@ -12,6 +12,14 @@ import { Course } from '../entities/course.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
 import { NicepayService, NiceAuthReturnBody } from './nicepay.service';
+import { EventsService } from '../ops/events.service';
+import { FeedbackTicketsService } from '../feedback/feedback-tickets.service';
+import {
+  FEEDBACK_PLANS,
+  FeedbackPlanId,
+  TICKETS_PER_PURCHASE,
+  isFeedbackPlanId,
+} from '../feedback/feedback.constants';
 
 @Injectable()
 export class PaymentsService {
@@ -24,7 +32,31 @@ export class PaymentsService {
     private readonly enrollRepo: Repository<Enrollment>,
     private readonly nicepay: NicepayService,
     private readonly enrollmentsService: EnrollmentsService,
+    private readonly events: EventsService,
+    private readonly feedbackTickets: FeedbackTicketsService,
   ) {}
+
+  private redirectFeedbackOk(orderId: string, plan: string, tid?: string | null) {
+    const q = new URLSearchParams({
+      status: 'ok',
+      type: 'feedback',
+      orderId,
+      plan,
+      sandbox: '1',
+    });
+    if (tid) q.set('tid', tid);
+    return this.redirect(`/checkout/complete?${q.toString()}`);
+  }
+
+  private redirectFeedbackFail(orderId: string | undefined, msg: string) {
+    const q = new URLSearchParams({
+      status: 'fail',
+      type: 'feedback',
+      msg,
+    });
+    if (orderId) q.set('orderId', orderId);
+    return this.redirect(`/checkout/complete?${q.toString()}`);
+  }
 
   private frontendBase(): string {
     return (process.env.CORS_ORIGIN ?? 'http://localhost:5174').replace(
@@ -99,6 +131,7 @@ export class PaymentsService {
     const order = this.orderRepo.create({
       orderId,
       userId,
+      orderType: 'course',
       courseIdsJson: JSON.stringify(uniqueIds),
       amount,
       goodsName,
@@ -108,6 +141,49 @@ export class PaymentsService {
 
     return {
       free: false as const,
+      order_type: 'course' as const,
+      clientId: this.nicepay.getPublicClientId(),
+      orderId,
+      amount,
+      goodsName,
+      returnUrl: this.nicepay.buildReturnUrl(),
+      sandbox: true,
+    };
+  }
+
+  async prepareFeedback(userId: number, planId: string) {
+    if (!isFeedbackPlanId(planId)) {
+      throw new BadRequestException('유효하지 않은 이용권 플랜입니다.');
+    }
+    const meta = FEEDBACK_PLANS[planId as FeedbackPlanId];
+    const amount = meta.price;
+    if (amount <= 0) {
+      throw new BadRequestException('결제 금액이 올바르지 않습니다.');
+    }
+    if (!this.nicepay.isConfigured()) {
+      throw new ServiceUnavailableException(
+        '결제 모듈이 설정되지 않았습니다. NICEPAY_CLIENT_ID / NICEPAY_SECRET_KEY를 확인하세요.',
+      );
+    }
+
+    const orderId = this.makeOrderId(userId);
+    const goodsName = `${meta.name} 3회 이용권`.slice(0, 40);
+    const order = this.orderRepo.create({
+      orderId,
+      userId,
+      orderType: 'feedback',
+      feedbackPlan: planId,
+      courseIdsJson: '[]',
+      amount,
+      goodsName,
+      status: 'pending',
+    });
+    await this.orderRepo.save(order);
+
+    return {
+      free: false as const,
+      order_type: 'feedback' as const,
+      plan_id: planId,
       clientId: this.nicepay.getPublicClientId(),
       orderId,
       amount,
@@ -148,17 +224,28 @@ export class PaymentsService {
     }
 
     if (order.status === 'paid') {
+      if (order.orderType === 'feedback' && order.feedbackPlan) {
+        return this.redirectFeedbackOk(orderId, order.feedbackPlan, order.niceTid);
+      }
       const cids = this.parseCourseIds(order.courseIdsJson);
       return this.redirect(
         `/checkout/complete?status=ok&orderId=${encodeURIComponent(orderId)}&courseIds=${cids.join(',')}`,
       );
     }
 
+    const isFeedback = order.orderType === 'feedback';
+
     if (body.authResultCode !== '0000') {
       order.status = 'failed';
       order.niceResultCode = body.authResultCode ?? null;
       order.niceResultMsg = body.authResultMsg ?? null;
       await this.orderRepo.save(order);
+      if (isFeedback) {
+        return this.redirectFeedbackFail(
+          orderId,
+          body.authResultMsg ?? '인증 실패',
+        );
+      }
       return this.redirect(
         `/checkout/complete?status=fail&orderId=${encodeURIComponent(orderId)}&msg=${encodeURIComponent(body.authResultMsg ?? '인증 실패')}`,
       );
@@ -168,6 +255,9 @@ export class PaymentsService {
     if (amount !== order.amount) {
       order.status = 'failed';
       await this.orderRepo.save(order);
+      if (isFeedback) {
+        return this.redirectFeedbackFail(orderId, '결제 금액이 일치하지 않습니다.');
+      }
       return this.redirect(
         `/checkout/complete?status=fail&orderId=${encodeURIComponent(orderId)}&msg=${encodeURIComponent('결제 금액이 일치하지 않습니다.')}`,
       );
@@ -176,6 +266,9 @@ export class PaymentsService {
     if (!this.nicepay.verifyAuth(body)) {
       order.status = 'failed';
       await this.orderRepo.save(order);
+      if (isFeedback) {
+        return this.redirectFeedbackFail(orderId, '위변조 검증에 실패했습니다.');
+      }
       return this.redirect(
         `/checkout/complete?status=fail&orderId=${encodeURIComponent(orderId)}&msg=${encodeURIComponent('위변조 검증에 실패했습니다.')}`,
       );
@@ -183,6 +276,9 @@ export class PaymentsService {
 
     const tid = body.tid;
     if (!tid) {
+      if (isFeedback) {
+        return this.redirectFeedbackFail(orderId, '거래 ID가 없습니다.');
+      }
       return this.redirect(
         `/checkout/complete?status=fail&orderId=${encodeURIComponent(orderId)}&msg=${encodeURIComponent('거래 ID가 없습니다.')}`,
       );
@@ -195,9 +291,46 @@ export class PaymentsService {
       order.niceResultCode = approved.resultCode ?? null;
       order.niceResultMsg = approved.resultMsg ?? null;
       await this.orderRepo.save(order);
+      if (isFeedback) {
+        return this.redirectFeedbackFail(
+          orderId,
+          approved.resultMsg ?? '승인 실패',
+        );
+      }
       return this.redirect(
         `/checkout/complete?status=fail&orderId=${encodeURIComponent(orderId)}&msg=${encodeURIComponent(approved.resultMsg ?? '승인 실패')}`,
       );
+    }
+
+    order.status = 'paid';
+    order.niceTid = approved.tid ?? tid;
+    order.niceResultCode = approved.resultCode ?? '0000';
+    order.niceResultMsg = approved.resultMsg ?? null;
+    order.paidAt = new Date();
+    await this.orderRepo.save(order);
+
+    if (isFeedback) {
+      const plan = order.feedbackPlan;
+      if (!plan || !isFeedbackPlanId(plan)) {
+        return this.redirectFeedbackFail(orderId, '이용권 플랜 정보가 없습니다.');
+      }
+      await this.feedbackTickets.credit(
+        order.userId,
+        plan as FeedbackPlanId,
+        TICKETS_PER_PURCHASE,
+      );
+      await this.events.emit(
+        'payment_success',
+        {
+          order_id: orderId,
+          amount: order.amount,
+          order_type: 'feedback',
+          plan_id: plan,
+          tickets: TICKETS_PER_PURCHASE,
+        },
+        [order.userId],
+      );
+      return this.redirectFeedbackOk(orderId, plan, order.niceTid);
     }
 
     const courseIds = this.parseCourseIds(order.courseIdsJson);
@@ -218,12 +351,15 @@ export class PaymentsService {
       }
     }
 
-    order.status = 'paid';
-    order.niceTid = approved.tid ?? tid;
-    order.niceResultCode = approved.resultCode ?? '0000';
-    order.niceResultMsg = approved.resultMsg ?? null;
-    order.paidAt = new Date();
-    await this.orderRepo.save(order);
+    await this.events.emit(
+      'payment_success',
+      {
+        order_id: orderId,
+        amount: order.amount,
+        course_ids: enrolled,
+      },
+      [order.userId],
+    );
 
     return this.redirect(
       `/checkout/complete?status=ok&orderId=${encodeURIComponent(orderId)}&courseIds=${enrolled.join(',')}&tid=${encodeURIComponent(order.niceTid ?? '')}&sandbox=1`,
@@ -238,10 +374,12 @@ export class PaymentsService {
     }
     return {
       order_id: order.orderId,
+      order_type: order.orderType,
       status: order.status,
       amount: order.amount,
       goods_name: order.goodsName,
       course_ids: this.parseCourseIds(order.courseIdsJson),
+      plan_id: order.feedbackPlan,
       paid_at: order.paidAt,
       nice_tid: order.niceTid,
       sandbox: true,

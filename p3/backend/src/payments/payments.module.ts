@@ -8,11 +8,15 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { NicepayService } from './nicepay.service';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { OpsModule } from '../ops/ops.module';
+import { FeedbackModule } from '../feedback/feedback.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PaymentOrder, Course, Enrollment]),
     EnrollmentsModule,
+    OpsModule,
+    FeedbackModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, NicepayService, RolesGuard],

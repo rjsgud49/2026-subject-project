@@ -10,6 +10,9 @@ import { Feedback } from '../entities/feedback.entity';
 import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { AddFeedbackMessageDto } from './dto/add-feedback-message.dto';
 import { TeacherFeedbackUpdateDto } from './dto/teacher-feedback-update.dto';
+import { EventsService } from '../ops/events.service';
+import { FeedbackTicketsService } from './feedback-tickets.service';
+import { isFeedbackPlanId } from './feedback.constants';
 
 export type FeedbackAttachmentDto = { url: string; filename: string };
 
@@ -26,6 +29,8 @@ export class FeedbackService {
   constructor(
     @InjectRepository(Feedback)
     private readonly feedbackRepo: Repository<Feedback>,
+    private readonly events: EventsService,
+    private readonly tickets: FeedbackTicketsService,
   ) {}
 
   private parseAttachments(json: string | null): FeedbackAttachmentDto[] {
@@ -83,6 +88,9 @@ export class FeedbackService {
   }
 
   async createByStudent(studentId: number, dto: CreateFeedbackDto) {
+    if (dto.plan_id && isFeedbackPlanId(dto.plan_id)) {
+      await this.tickets.consume(studentId, dto.plan_id);
+    }
     const row = this.feedbackRepo.create({
       studentId,
       title: dto.title,
@@ -194,6 +202,13 @@ export class FeedbackService {
       row.teacherFeedback = dto.teacherFeedback || null;
 
     await this.feedbackRepo.save(row);
+    if (row.status === 'answered' && row.studentId) {
+      await this.events.emit(
+        'feedback_answered',
+        { feedback_id: row.id, title: row.title },
+        [row.studentId],
+      );
+    }
     return this.getOneForTeacher(teacherId, feedbackId);
   }
 

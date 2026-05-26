@@ -125,12 +125,9 @@ export default function Signup() {
             >
               P1
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--color-neutral-900)' }}>
               회원가입
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0 }}>
-              이메일로 계정을 만들고 학습을 시작하세요.
-            </p>
           </div>
 
           <form onSubmit={submit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

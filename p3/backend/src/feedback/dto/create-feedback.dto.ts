@@ -2,15 +2,22 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { FEEDBACK_PLAN_IDS } from '../feedback.constants';
 import { FeedbackAttachmentRefDto } from './feedback-attachment-ref.dto';
 
 export class CreateFeedbackDto {
+  @IsOptional()
+  @IsString()
+  @IsIn(FEEDBACK_PLAN_IDS)
+  plan_id?: (typeof FEEDBACK_PLAN_IDS)[number];
+
   @IsString()
   @MinLength(2)
   @MaxLength(200)

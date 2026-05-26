@@ -24,6 +24,7 @@ import { CreateFeedbackDto } from './dto/create-feedback.dto';
 import { AddFeedbackMessageDto } from './dto/add-feedback-message.dto';
 import { TeacherFeedbackUpdateDto } from './dto/teacher-feedback-update.dto';
 import { FeedbackService } from './feedback.service';
+import { FeedbackTicketsService } from './feedback-tickets.service';
 import { p2DiskStorage } from '../upload.storage';
 import { resolveUploadDisplayName } from '../upload.display-name';
 import { assertStudentFeedbackUpload } from '../upload.validation';
@@ -31,7 +32,16 @@ import { assertStudentFeedbackUpload } from '../upload.validation';
 @Controller()
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class FeedbackController {
-  constructor(private readonly feedbackService: FeedbackService) {}
+  constructor(
+    private readonly feedbackService: FeedbackService,
+    private readonly feedbackTickets: FeedbackTicketsService,
+  ) {}
+
+  @Get('feedback/tickets')
+  @Roles('student')
+  tickets(@CurrentUser() user: AuthUser) {
+    return this.feedbackTickets.getWallet(user.id);
+  }
 
   @Post('feedback/upload')
   @Roles('student')

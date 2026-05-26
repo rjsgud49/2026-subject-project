@@ -138,12 +138,9 @@ export default function Signup() {
             >
               P1
             </div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: 'var(--color-neutral-900)' }}>
               회원가입
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--color-neutral-500)', margin: 0 }}>
-              새로운 계정을 만들고 학습을 시작하세요.
-            </p>
           </div>
 
           <form onSubmit={submit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -165,9 +162,6 @@ export default function Signup() {
                 <option value="student">학생</option>
                 <option value="teacher">강사</option>
               </select>
-              <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-neutral-500)' }}>
-                가입 후 역할에 맞는 대시보드로 이동합니다.
-              </p>
             </div>
 
             <Button type="submit" size="lg" loading={loading} style={{ width: '100%', marginTop: 4 }}>

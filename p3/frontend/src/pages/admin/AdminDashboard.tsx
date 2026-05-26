@@ -5,6 +5,7 @@ import {
   BookOpen,
   GraduationCap,
   LayoutList,
+  Activity,
   Shield,
   UserCog,
   Users,
@@ -359,6 +360,42 @@ export default function AdminDashboard() {
                   <div style={{ fontWeight: 800, fontSize: 15 }}>공개 강의 목록</div>
                   <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>
                     학생 화면과 동일한 카탈로그
+                  </div>
+                </div>
+              </div>
+              <ArrowRight size={20} color="var(--color-neutral-400)" />
+            </Link>
+            <Link
+              to="/admin/ops"
+              className="card"
+              style={{
+                padding: '18px 20px',
+                textDecoration: 'none',
+                color: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'var(--color-warning-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Activity size={22} color="var(--color-warning-800)" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>운영 · 모니터링</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>
+                    메트릭, 감사 로그, Webhook
                   </div>
                 </div>
               </div>

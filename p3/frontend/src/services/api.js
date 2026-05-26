@@ -3,7 +3,7 @@ import { mockHandleRequest } from './mockData';
 
 const BASE = '/api/v1';
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const TOKEN_KEY = 'p2_access_token';
+const TOKEN_KEY = 'p3_access_token';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -107,7 +107,7 @@ async function request(path, options = {}) {
   if (!(body instanceof FormData) && body != null && typeof body === 'string' && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (options.auth !== false && token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(url, {
     ...options,
@@ -200,14 +200,16 @@ export const api = {
       const data = await request('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
+        auth: false,
       });
       if (data?.access_token) setToken(data.access_token);
       return data.user;
     },
-    signup: async ({ email, name, password, role }) => {
+    signup: async (body) => {
       const data = await request('/auth/signup', {
         method: 'POST',
-        body: JSON.stringify({ email, name, password, role }),
+        body: JSON.stringify(body),
+        auth: false,
       });
       if (data?.access_token) setToken(data.access_token);
       return data.user;
@@ -231,6 +233,19 @@ export const api = {
         body: JSON.stringify({ course_ids }),
       }),
     getOrder: (orderId) => request(`/payments/orders/${encodeURIComponent(orderId)}`),
+    prepareFeedback: (plan_id) =>
+      request('/payments/prepare-feedback', {
+        method: 'POST',
+        body: JSON.stringify({ plan_id }),
+      }),
+  },
+  reviews: {
+    list: (limit = 12) => request(`/reviews?limit=${encodeURIComponent(String(limit))}`, { auth: false }),
+    create: (body) =>
+      request('/reviews', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
   },
   cart: {
     list: () => request('/cart'),
@@ -307,6 +322,13 @@ export const api = {
           body: JSON.stringify(body),
         },
       ),
+    listNotes: (enrollmentId) =>
+      request(`/enrollments/${Number(enrollmentId)}/notes`),
+    upsertNote: (enrollmentId, videoId, text) =>
+      request(`/enrollments/${Number(enrollmentId)}/videos/${Number(videoId)}/note`, {
+        method: 'PUT',
+        body: JSON.stringify({ text }),
+      }),
   },
   questions: {
     list: (courseId, page = 1, size = 20) =>
@@ -331,6 +353,7 @@ export const api = {
       }),
   },
   feedback: {
+    tickets: () => request('/feedback/tickets'),
     /** 학생 첨부 1건 업로드 → 백엔드 검증 후 /api/v1/files/... URL */
     uploadStudentFile: (file) => {
       const fd = new FormData();
@@ -376,6 +399,7 @@ export const api = {
       const body = {
         title,
         question,
+        ...(planId ? { plan_id: planId } : {}),
         ...(attachments.length ? { attachments } : {}),
       };
       return request('/feedback', {

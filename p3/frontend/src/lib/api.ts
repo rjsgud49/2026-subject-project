@@ -1,6 +1,6 @@
 const BASE = '/api/v1';
 
-const TOKEN_KEY = 'p2_access_token';
+const TOKEN_KEY = 'p3_access_token';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -64,7 +64,21 @@ export const api = {
         body: JSON.stringify(body),
         auth: false,
       }),
-    signup: (body: { email: string; name: string; password: string; role?: 'student' | 'teacher' }) =>
+    signup: (body: {
+      email: string;
+      name: string;
+      password: string;
+      role?: 'student' | 'teacher';
+      phone?: string;
+      teacher_expertise?: string;
+      bio?: string;
+      settlement_bank?: string;
+      settlement_account_no?: string;
+      settlement_holder?: string;
+      agree_terms?: boolean;
+      agree_privacy?: boolean;
+      agree_settlement?: boolean;
+    }) =>
       apiRequest<LoginResponse>('/auth/signup', {
         method: 'POST',
         body: JSON.stringify(body),
@@ -89,6 +103,16 @@ export const api = {
         body: JSON.stringify({ role }),
       }),
     courses: () => apiRequest<AdminCourseRow[]>('/admin/courses'),
+    metrics: () => apiRequest<OpsMetrics>('/admin/ops/metrics'),
+    auditLogs: () => apiRequest<AuditLogRow[]>('/admin/ops/audit-logs'),
+    webhooks: () => apiRequest<WebhookRow[]>('/admin/webhooks'),
+    createWebhook: (body: { name: string; url: string; events: string[] }) =>
+      apiRequest<WebhookRow & { secret: string }>('/admin/webhooks', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    deleteWebhook: (id: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/webhooks/${id}`, { method: 'DELETE' }),
   },
   teacher: {
     dashboard: () => apiRequest<TeacherDashboard>('/teacher/dashboard'),
@@ -181,8 +205,67 @@ export const api = {
       }),
     remove: (id: number) =>
       apiRequest<{ ok: boolean }>(`/enrollments/${id}`, { method: 'DELETE' }),
+    listNotes: (enrollmentId: number) =>
+      apiRequest<StudyNoteRow[]>(`/enrollments/${enrollmentId}/notes`),
+    upsertNote: (enrollmentId: number, videoId: number, text: string) =>
+      apiRequest<StudyNoteRow>(`/enrollments/${enrollmentId}/videos/${videoId}/note`, {
+        method: 'PUT',
+        body: JSON.stringify({ text }),
+      }),
+  },
+  payments: {
+    config: () =>
+      apiRequest<{ enabled: boolean; clientId: string | null; sandbox: boolean }>(
+        '/payments/config',
+        { auth: false },
+      ),
+    prepare: (course_ids: number[]) =>
+      apiRequest<Record<string, unknown>>('/payments/prepare', {
+        method: 'POST',
+        body: JSON.stringify({ course_ids }),
+      }),
+    freeCheckout: (course_ids: number[]) =>
+      apiRequest<{ course_ids: number[] }>('/payments/free-checkout', {
+        method: 'POST',
+        body: JSON.stringify({ course_ids }),
+      }),
+    getOrder: (orderId: string) =>
+      apiRequest<Record<string, unknown>>(`/payments/orders/${encodeURIComponent(orderId)}`),
+    prepareFeedback: (plan_id: 'doc' | 'video' | 'premium') =>
+      apiRequest<Record<string, unknown>>('/payments/prepare-feedback', {
+        method: 'POST',
+        body: JSON.stringify({ plan_id }),
+      }),
+  },
+  notifications: {
+    events: () => apiRequest<{ events: string[] }>('/ops/events', { auth: false }),
+    list: () => apiRequest<NotificationSubRow[]>('/notifications/subscriptions'),
+    upsert: (body: {
+      channel: 'email' | 'discord';
+      target: string;
+      event_types: string[];
+      enabled?: boolean;
+    }) =>
+      apiRequest<NotificationSubRow>('/notifications/subscriptions', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    remove: (id: number) =>
+      apiRequest<{ ok: boolean }>(`/notifications/subscriptions/${id}`, { method: 'DELETE' }),
   },
   feedback: {
+    tickets: () =>
+      apiRequest<{
+        tickets: { doc: number; video: number; premium: number };
+        purchase_history: Array<{
+          id: string;
+          plan_id: string;
+          plan_name: string;
+          price: number;
+          count: number;
+          purchased_at: string;
+        }>;
+      }>('/feedback/tickets'),
     mine: () => apiRequest<FeedbackRow[]>('/feedback/mine'),
     uploadStudentFile: (file: File) => {
       const fd = new FormData();
@@ -328,6 +411,49 @@ export type AdminCourseRow = {
   instructor_id: number;
   instructor: { id: number; name: string; email: string } | null;
   created_at: string;
+};
+
+export type StudyNoteRow = {
+  video_id: number;
+  text: string;
+  updated_at: string | null;
+};
+
+export type OpsMetrics = {
+  uptime_sec: number;
+  http_requests_total: number;
+  http_errors_total: number;
+  error_rate: number;
+};
+
+export type AuditLogRow = {
+  id: number;
+  user_id: number | null;
+  action: string;
+  resource: string;
+  resource_id: string | null;
+  meta: Record<string, unknown> | null;
+  ip: string | null;
+  created_at: string;
+};
+
+export type WebhookRow = {
+  id: number;
+  name: string;
+  url: string;
+  events: string[];
+  enabled: boolean;
+  created_at?: string;
+  secret?: string;
+};
+
+export type NotificationSubRow = {
+  id: number;
+  channel: 'email' | 'discord';
+  target: string;
+  event_types: string[];
+  enabled: boolean;
+  updated_at?: string;
 };
 
 export type EnrollmentRow = {

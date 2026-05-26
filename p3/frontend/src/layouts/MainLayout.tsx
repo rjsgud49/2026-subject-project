@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { logout } from '../features/userSlice';
 import { fetchCart } from '../features/cartSlice';
-import { setToken } from '../services/api';
+import { getToken, setToken } from '../services/api';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
 import {
@@ -39,7 +39,12 @@ export default function MainLayout() {
     user?.role === 'student' && Array.isArray(cartItems) ? cartItems.length : 0;
 
   useEffect(() => {
-    if (user?.role === 'student') dispatch(fetchCart());
+    if (user && !getToken()) {
+      dispatch(logout());
+      setToken(null);
+      return;
+    }
+    if (user?.role === 'student' && getToken()) dispatch(fetchCart());
   }, [user?.id, user?.role, dispatch]);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);

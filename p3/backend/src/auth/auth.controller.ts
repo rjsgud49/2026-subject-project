@@ -19,7 +19,7 @@ export class AuthController {
 
   @Post('signup')
   signup(@Body() dto: SignupDto) {
-    return this.authService.signup(dto.email, dto.name, dto.password, dto.role);
+    return this.authService.signup(dto);
   }
 
   @Get('me')

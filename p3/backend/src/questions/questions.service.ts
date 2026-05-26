@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Question } from '../entities/question.entity';
 import { Answer } from '../entities/answer.entity';
 import { Course } from '../entities/course.entity';
+import { EventsService } from '../ops/events.service';
 
 @Injectable()
 export class QuestionsService {
@@ -16,6 +17,7 @@ export class QuestionsService {
     private readonly questionRepo: Repository<Question>,
     @InjectRepository(Answer) private readonly answerRepo: Repository<Answer>,
     @InjectRepository(Course) private readonly courseRepo: Repository<Course>,
+    private readonly events: EventsService,
   ) {}
 
   private async requirePublishedCourse(courseId: number): Promise<Course> {
@@ -162,6 +164,17 @@ export class QuestionsService {
       body: body.body,
     });
     await this.answerRepo.save(a);
+    if (question.userId !== userId) {
+      await this.events.emit(
+        'qna_answer',
+        {
+          question_id: questionId,
+          course_id: question.courseId,
+          title: question.title,
+        },
+        [question.userId],
+      );
+    }
     return { id: a.id };
   }
 }

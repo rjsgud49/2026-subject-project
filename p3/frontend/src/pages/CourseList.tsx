@@ -10,6 +10,7 @@ import {
   setViewMode,
 } from '../features/coursesSlice';
 import { fetchEnrollments } from '../features/enrollmentSlice';
+import { getToken } from '../services/api';
 import FilterSidebar from '../components/FilterSidebar';
 import CourseCard from '../components/CourseCard';
 import Pagination from '../components/Pagination';
@@ -21,6 +22,7 @@ export default function CourseList() {
   const dispatch = useAppDispatch();
   const { filters, items, total, size, listStatus, viewMode } = useAppSelector((s) => s.courses);
   const enrollments = useAppSelector((s) => s.enrollment.list);
+  const user = useAppSelector((s) => s.user.user);
 
   useEffect(() => {
     const cat = searchParams.get('category');
@@ -28,8 +30,8 @@ export default function CourseList() {
   }, [searchParams, dispatch]);
 
   useEffect(() => {
-    dispatch(fetchEnrollments());
-  }, [dispatch]);
+    if (user?.role === 'student' && getToken()) dispatch(fetchEnrollments());
+  }, [dispatch, user?.id, user?.role]);
 
   useEffect(() => {
     dispatch(fetchCourses());

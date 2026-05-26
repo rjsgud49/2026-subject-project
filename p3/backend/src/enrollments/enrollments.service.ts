@@ -10,6 +10,7 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { Course } from '../entities/course.entity';
 import { EnrollmentVideoProgress } from '../entities/enrollment-video-progress.entity';
 import { TeacherRevenueLine } from '../entities/teacher-revenue-line.entity';
+import { StudyNote } from '../entities/study-note.entity';
 import { CartService } from '../cart/cart.service';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 import { splitEnrollmentRevenue } from '../settlement.constants';
@@ -74,8 +75,19 @@ export class EnrollmentsService {
     private readonly progressRepo: Repository<EnrollmentVideoProgress>,
     @InjectRepository(TeacherRevenueLine)
     private readonly revenueRepo: Repository<TeacherRevenueLine>,
+    @InjectRepository(StudyNote)
+    private readonly studyNoteRepo: Repository<StudyNote>,
     private readonly cartService: CartService,
   ) {}
+
+  private async requireMineEnrollment(userId: number, enrollmentId: number) {
+    const e = await this.enrollRepo.findOne({ where: { id: enrollmentId } });
+    if (!e) throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    if (Number(e.userId) !== Number(userId)) {
+      throw new ForbiddenException('본인 수강만 조회할 수 있습니다.');
+    }
+    return e;
+  }
 
   private async createRevenueLineForEnrollment(
     enrollment: Enrollment,
@@ -193,6 +205,53 @@ export class EnrollmentsService {
     e.lastVideoId = videoId;
     await this.enrollRepo.save(e);
     return { ok: true };
+  }
+
+  async listStudyNotes(userId: number, enrollmentId: number) {
+    await this.requireMineEnrollment(userId, enrollmentId);
+    const rows = await this.studyNoteRepo.find({
+      where: { enrollmentId },
+      order: { updatedAt: 'DESC' },
+    });
+    return rows.map((n) => ({
+      video_id: Number(n.videoId),
+      text: n.text,
+      updated_at: n.updatedAt,
+    }));
+  }
+
+  async upsertStudyNote(
+    userId: number,
+    enrollmentId: number,
+    videoId: number,
+    text: string,
+  ) {
+    await this.requireMineEnrollment(userId, enrollmentId);
+    const trimmed = text.trim();
+    const existing = await this.studyNoteRepo.findOne({
+      where: { enrollmentId, videoId },
+    });
+    if (!trimmed) {
+      if (existing) await this.studyNoteRepo.remove(existing);
+      return { video_id: videoId, text: '', updated_at: null };
+    }
+    if (existing) {
+      existing.text = trimmed;
+      const saved = await this.studyNoteRepo.save(existing);
+      return {
+        video_id: Number(saved.videoId),
+        text: saved.text,
+        updated_at: saved.updatedAt,
+      };
+    }
+    const created = await this.studyNoteRepo.save(
+      this.studyNoteRepo.create({ enrollmentId, videoId, text: trimmed }),
+    );
+    return {
+      video_id: Number(created.videoId),
+      text: created.text,
+      updated_at: created.updatedAt,
+    };
   }
 
   private toDto(

@@ -10,6 +10,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { SignupDto } from './dto/signup.dto';
 
 @Injectable()
 export class AuthService {
@@ -51,25 +52,71 @@ export class AuthService {
     return this.sign(user);
   }
 
-  async signup(
-    email: string,
-    name: string,
-    password: string,
-    roleInput?: string,
-  ) {
-    const em = (email ?? '').trim().toLowerCase();
-    const nm = (name ?? '').trim();
+  async signup(dto: SignupDto) {
+    const em = (dto.email ?? '').trim().toLowerCase();
+    const nm = (dto.name ?? '').trim();
     if (!em) throw new BadRequestException('이메일을 입력해 주세요.');
-    if (!nm) throw new BadRequestException('이름을 입력해 주세요.');
-    const pwd = String(password ?? '');
-    if (pwd.length < 4)
-      throw new BadRequestException('비밀번호는 4자 이상이어야 합니다.');
+    if (!nm || nm.length < 2)
+      throw new BadRequestException('이름은 2자 이상 입력해 주세요.');
+
+    const role: UserRole = dto.role === 'teacher' ? 'teacher' : 'student';
+    const pwd = String(dto.password ?? '');
+
+    if (role === 'student') {
+      if (pwd.length < 4)
+        throw new BadRequestException('비밀번호는 4자 이상이어야 합니다.');
+    } else {
+      if (!/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(pwd)) {
+        throw new BadRequestException(
+          '강사 비밀번호는 8자 이상, 영문·숫자를 각각 1자 이상 포함해야 합니다.',
+        );
+      }
+      if (!dto.agree_terms || !dto.agree_privacy || !dto.agree_settlement) {
+        throw new BadRequestException('필수 약관에 모두 동의해 주세요.');
+      }
+      const phone = (dto.phone ?? '').replace(/\s/g, '');
+      if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(phone)) {
+        throw new BadRequestException('휴대폰 번호 형식이 올바르지 않습니다.');
+      }
+      const bio = (dto.bio ?? '').trim();
+      if (bio.length < 30) {
+        throw new BadRequestException('강사 소개는 30자 이상 작성해 주세요.');
+      }
+      if (!(dto.teacher_expertise ?? '').trim()) {
+        throw new BadRequestException('주요 강의 분야를 선택해 주세요.');
+      }
+      if (
+        !(dto.settlement_bank ?? '').trim() ||
+        !(dto.settlement_account_no ?? '').trim() ||
+        !(dto.settlement_holder ?? '').trim()
+      ) {
+        throw new BadRequestException('정산 계좌 정보를 모두 입력해 주세요.');
+      }
+    }
 
     const exists = await this.userRepo.findOne({ where: { email: em } });
     if (exists) throw new ConflictException('이미 가입된 이메일입니다.');
 
     const passwordHash = await bcrypt.hash(pwd, 10);
-    const role: UserRole = roleInput === 'teacher' ? 'teacher' : 'student';
+
+    if (role === 'teacher') {
+      const phoneNorm = (dto.phone ?? '').replace(/\s/g, '');
+      const u = this.userRepo.create({
+        email: em,
+        name: nm,
+        role,
+        passwordHash,
+        phone: phoneNorm,
+        teacherExpertise: dto.teacher_expertise!.trim(),
+        bio: dto.bio!.trim(),
+        settlementBankName: dto.settlement_bank!.trim(),
+        settlementAccountNo: dto.settlement_account_no!.trim(),
+        settlementHolderName: dto.settlement_holder!.trim(),
+      });
+      await this.userRepo.save(u);
+      return this.sign(u);
+    }
+
     const u = this.userRepo.create({ email: em, name: nm, role, passwordHash });
     await this.userRepo.save(u);
     return this.sign(u);
