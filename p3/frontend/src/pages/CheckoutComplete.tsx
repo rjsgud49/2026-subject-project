@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { fetchEnrollments, setCheckoutCourseIds } from '../features/enrollmentSlice';
@@ -22,31 +22,38 @@ export default function CheckoutComplete() {
   const isFail = status === 'fail';
   const orderId = params.get('orderId');
   const tid = params.get('tid');
-  const sandbox = params.get('sandbox') === '1';
   const isFree = params.get('free') === '1';
   const isFeedback = params.get('type') === 'feedback';
   const feedbackPlan = params.get('plan');
   const failMsg = params.get('msg');
   const planLabel = feedbackPlan ? (PLAN_LABELS[feedbackPlan] ?? feedbackPlan) : '';
 
+  const courseIdsParam = params.get('courseIds') ?? '';
+
   const courseIds = useMemo(() => {
-    const fromQuery = params.get('courseIds');
-    if (fromQuery) {
-      return fromQuery
+    if (courseIdsParam) {
+      return courseIdsParam
         .split(',')
         .map((x) => Number(x))
         .filter((n) => Number.isFinite(n) && n > 0);
     }
     return Array.isArray(storeIds) ? storeIds : [];
-  }, [params, storeIds]);
+  }, [courseIdsParam, storeIds]);
+
+  const postCheckoutRan = useRef(false);
 
   useEffect(() => {
-    if (courseIds.length) dispatch(setCheckoutCourseIds(courseIds));
-    if (isOk) {
+    if (postCheckoutRan.current) return;
+    postCheckoutRan.current = true;
+
+    if (courseIdsParam && courseIds.length) {
+      dispatch(setCheckoutCourseIds(courseIds));
+    }
+    if (isOk && !isFeedback) {
       dispatch(fetchEnrollments());
       dispatch(fetchCart());
     }
-  }, [dispatch, courseIds, isOk]);
+  }, [dispatch, courseIdsParam, courseIds.length, isOk, isFeedback]);
 
   const iconBg = isFail ? 'var(--color-error-50)' : 'var(--color-success-50)';
   const iconColor = isFail ? 'var(--color-error-600)' : 'var(--color-success-600)';
@@ -100,7 +107,7 @@ export default function CheckoutComplete() {
               ? `${courseIds.length}개 강의가 내 강의실에 추가되었습니다.`
               : '강의가 내 강의실에 반영되었습니다.'}
       </p>
-      {(orderId || tid || sandbox || isFree) && (
+      {(orderId || tid || isFree) && (
         <div style={{ fontSize: 12, color: 'var(--color-neutral-400)', marginBottom: 24, lineHeight: 1.6 }}>
           {orderId && (
             <p style={{ margin: '0 0 6px' }}>
@@ -112,10 +119,8 @@ export default function CheckoutComplete() {
               거래번호: <code>{tid}</code>
             </p>
           )}
-          {(sandbox || isFree) && (
-            <p style={{ margin: 0 }}>
-              {isFree ? '무료 수강신청' : '나이스페이 샌드박스 결제'} · 실제 과금 없음
-            </p>
+          {isFree && (
+            <p style={{ margin: 0 }}>무료 수강신청이 완료되었습니다.</p>
           )}
         </div>
       )}

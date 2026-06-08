@@ -9,7 +9,7 @@ import {
 import { fetchEnrollments, setCheckoutCourseIds } from '../features/enrollmentSlice';
 import Button from '../components/Button';
 import { formatPrice } from '../utils/format';
-import { openNicePayCheckout } from '../utils/nicepay';
+import { openPaymentCheckout } from '../utils/paymentCheckout';
 import { api } from '../services/api';
 import { Lock, ShoppingCart, Trash2, CreditCard } from 'lucide-react';
 
@@ -69,7 +69,7 @@ export default function Cart() {
         return;
       }
       dispatch(setCheckoutCourseIds(ids as number[]));
-      await openNicePayCheckout(prep, {
+      await openPaymentCheckout(prep, {
         name: user?.name,
         email: user?.email,
       });
@@ -143,7 +143,7 @@ export default function Cart() {
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, margin: '0 0 6px', color: 'var(--color-neutral-900)' }}>장바구니</h1>
         <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 14 }}>
-          담아둔 강의를 선택한 뒤 나이스페이 샌드박스로 결제합니다. (테스트 환경 · 실제 과금 없음)
+          선택한 강의를 안전하게 결제하고 바로 수강을 시작하세요.
         </p>
       </div>
 
@@ -343,12 +343,11 @@ export default function Cart() {
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <CreditCard size={16} />
-                {total === 0 && selected.size ? '무료 수강신청' : '나이스페이로 결제'}
+                {total === 0 && selected.size ? '무료 수강신청' : '결제하기'}
               </span>
             </Button>
             <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--color-neutral-400)', lineHeight: 1.5 }}>
-              샌드박스 테스트 카드로 결제하면 승인 API까지 실제로 호출되지만, 실제 돈은 나가지 않습니다.
-              이미 수강 중인 강의는 결제 전에 장바구니에서 제거해 주세요.
+              카드·간편결제로 결제할 수 있습니다. 이미 수강 중인 강의는 결제 전에 장바구니에서 제거해 주세요.
             </p>
           </div>
         </div>

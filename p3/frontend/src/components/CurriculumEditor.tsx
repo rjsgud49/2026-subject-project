@@ -3,6 +3,11 @@ import { Plus, Trash2, Upload } from 'lucide-react';
 import Button from './Button';
 import { formatDuration } from '../utils/format';
 import { getVideoDurationSeconds } from '../utils/videoMeta';
+import {
+  COURSE_VIDEO_ACCEPT,
+  COURSE_VIDEO_FORMAT_LABEL,
+  validateCourseVideoFile,
+} from '../utils/uploadFormats';
 
 export type CurriculumVideo = {
   id: number;
@@ -121,6 +126,11 @@ export default function CurriculumEditor({
     const key = `${si}-${vi}`;
     setBusyErr(null);
     if (!file) return;
+    const formatErr = validateCourseVideoFile(file);
+    if (formatErr) {
+      setBusyErr(formatErr);
+      return;
+    }
     setBusyKey(key);
     try {
       const [durationSec, { url }] = await Promise.all([
@@ -144,6 +154,10 @@ export default function CurriculumEditor({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-600)' }}>
         섹션(챕터)과 각 영상 제목을 입력하고, 영상은 파일로 업로드하세요. 재생 길이는 업로드된 파일에서 자동으로 설정됩니다.
+        <br />
+        <span style={{ fontSize: 13, color: 'var(--color-neutral-500)' }}>
+          허용 형식: {COURSE_VIDEO_FORMAT_LABEL}
+        </span>
       </p>
 
       {value.sections.map((section, si) => (
@@ -218,7 +232,7 @@ export default function CurriculumEditor({
                     </span>
                     <input
                       type="file"
-                      accept="video/*,.mp4,.webm,.mov,.m4v,.mkv,.avi,.ogv"
+                      accept={COURSE_VIDEO_ACCEPT}
                       disabled={busy}
                       style={{ fontSize: 13 }}
                       onChange={(e) => {
@@ -227,6 +241,9 @@ export default function CurriculumEditor({
                         void onPickVideoFile(si, vi, f);
                       }}
                     />
+                    <span style={{ fontSize: 11, color: 'var(--color-neutral-400)' }}>
+                      {COURSE_VIDEO_FORMAT_LABEL}만 선택 가능
+                    </span>
                     {video.video_url ? (
                       <span style={{ fontSize: 12, color: 'var(--color-neutral-500)', wordBreak: 'break-all' }}>
                         등록됨: {video.video_url}

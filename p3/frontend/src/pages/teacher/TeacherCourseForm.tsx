@@ -9,6 +9,11 @@ import CurriculumEditor, {
   type CurriculumData,
 } from '../../components/CurriculumEditor';
 import { api } from '../../lib/api';
+import {
+  COURSE_IMAGE_ACCEPT,
+  COURSE_IMAGE_FORMAT_LABEL,
+  validateCourseImageFile,
+} from '../../utils/uploadFormats';
 
 export default function TeacherCourseForm() {
   const { courseId } = useParams();
@@ -114,6 +119,11 @@ export default function TeacherCourseForm() {
     const file = ev.target.files?.[0];
     ev.target.value = '';
     if (!file) return;
+    const formatErr = validateCourseImageFile(file);
+    if (formatErr) {
+      setThumbErr(formatErr);
+      return;
+    }
     setThumbErr('');
     setThumbBusy(true);
     try {
@@ -190,11 +200,14 @@ export default function TeacherCourseForm() {
             </span>
             <input
               type="file"
-              accept="image/*,.jpg,.jpeg,.png,.webp,.gif"
+              accept={COURSE_IMAGE_ACCEPT}
               disabled={thumbBusy}
               style={{ fontSize: 14 }}
               onChange={(e) => void onThumbnailFile(e)}
             />
+            <span style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>
+              허용 형식: {COURSE_IMAGE_FORMAT_LABEL}
+            </span>
             {thumbnailUrl ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <img

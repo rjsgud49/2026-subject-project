@@ -5,7 +5,7 @@ import { fetchCourseDetail, setActiveTab } from '../features/coursesSlice';
 import { addToCartThunk, fetchCart } from '../features/cartSlice';
 import { fetchEnrollments, setCheckoutCourseIds } from '../features/enrollmentSlice';
 import { api } from '../services/api';
-import { openNicePayCheckout } from '../utils/nicepay';
+import { openPaymentCheckout } from '../utils/paymentCheckout';
 import { fetchQuestions } from '../features/qaSlice';
 import Tabs from '../components/Tabs';
 import Accordion from '../components/Accordion';
@@ -65,7 +65,7 @@ export default function CourseDetail() {
         return;
       }
       dispatch(setCheckoutCourseIds([cid]));
-      await openNicePayCheckout(prep, { name: user.name, email: user.email });
+      await openPaymentCheckout(prep, { name: user.name, email: user.email });
     } catch (e) {
       window.alert(e instanceof Error ? e.message : '결제를 시작할 수 없습니다.');
     }
@@ -181,7 +181,7 @@ export default function CourseDetail() {
           ) : user ? (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
               <Button variant="secondary" onClick={addCart}>장바구니 담기</Button>
-              <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '나이스페이로 결제'}</Button>
+              <Button onClick={enroll}>{Number(c.price) === 0 ? '무료 수강하기' : '결제하고 수강하기'}</Button>
             </div>
           ) : (
             <div style={{ marginTop: 4 }}>

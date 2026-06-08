@@ -7,7 +7,7 @@ import type { TicketState } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
 import Modal from '../components/Modal';
 import { formatPrice } from '../utils/format';
-import { openNicePayCheckout } from '../utils/nicepay';
+import { openPaymentCheckout } from '../utils/paymentCheckout';
 import { api } from '../services/api';
 import {
   FileText, Video, Award, Ticket, Lock,
@@ -58,7 +58,7 @@ const PLANS: {
   },
 ];
 
-type PayStep = 'select' | 'confirm' | 'processing';
+type PayStep = 'select' | 'confirm';
 
 export default function FeedbackBuy() {
   useRedirectIfNotStudentFeedback();
@@ -97,12 +97,15 @@ export default function FeedbackBuy() {
   const handlePay = async () => {
     if (!selected) return;
     setCheckingOut(true);
-    setPayStep('processing');
     try {
       const prep = await api.payments.prepareFeedback(selected);
-      await openNicePayCheckout(prep, {
+      await openPaymentCheckout(prep, {
         name: user?.name,
         email: user?.email,
+        onClosed: () => {
+          setPayStep('confirm');
+          setCheckingOut(false);
+        },
       });
     } catch (e) {
       setPayStep('confirm');
@@ -256,7 +259,7 @@ export default function FeedbackBuy() {
           </div>
 
           <p style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginBottom: 20, lineHeight: 1.6 }}>
-            나이스페이 결제창에서 카드·간편결제 등을 선택할 수 있습니다. (샌드박스 · 실제 과금 없음)
+            결제창에서 카드·간편결제 등을 선택할 수 있습니다.
           </p>
 
           <div style={{ display: 'flex', gap: 10 }}>
@@ -264,18 +267,9 @@ export default function FeedbackBuy() {
               이전
             </Button>
             <Button onClick={handlePay} disabled={checkingOut} style={{ flex: 2, justifyContent: 'center', padding: '14px 0', fontSize: 15 }}>
-              {checkingOut ? '결제창 연결 중…' : `${formatPrice(plan.price)} 나이스페이 결제`}
+              {checkingOut ? '결제창 연결 중…' : `${formatPrice(plan.price)} 결제하기`}
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* 결제창 대기 */}
-      {payStep === 'processing' && (
-        <div style={{ textAlign: 'center', padding: '80px 0' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', border: '4px solid var(--color-primary-200)', borderTopColor: 'var(--color-primary-500)', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
-          <p style={{ fontSize: 16, color: 'var(--color-neutral-500)' }}>나이스페이 결제창을 여는 중입니다…</p>
-          <p style={{ fontSize: 13, color: 'var(--color-neutral-400)', marginTop: 8 }}>창이 보이지 않으면 팝업 차단을 해제해 주세요.</p>
         </div>
       )}
 

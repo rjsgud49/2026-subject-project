@@ -18,20 +18,24 @@ import {
 import { PaymentsService } from './payments.service';
 import { PreparePaymentDto } from './dto/prepare-payment.dto';
 import { PrepareFeedbackDto } from './dto/prepare-feedback.dto';
-import { NiceAuthReturnBody } from './nicepay.service';
+import { PaymentAuthReturnBody, PaymentGatewayService } from './payment-gateway.service';
+import { readPaymentEnv } from './payment-gateway.util';
 
 @Controller('payments')
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly paymentGateway: PaymentGatewayService,
+  ) {}
 
   @Get('config')
   config() {
-    const clientId = process.env.NICEPAY_CLIENT_ID ?? '';
+    const clientId = readPaymentEnv('PAYMENT_CLIENT_ID', 'NICEPAY_CLIENT_ID');
+    const secret = readPaymentEnv('PAYMENT_SECRET_KEY', 'NICEPAY_SECRET_KEY');
     return {
-      enabled: Boolean(clientId && process.env.NICEPAY_SECRET_KEY),
+      enabled: Boolean(clientId && secret),
       clientId: clientId || null,
-      sandbox: true,
-      jsUrl: 'https://pay.nicepay.co.kr/v1/js/',
+      jsUrl: this.paymentGateway.getJsUrl(),
     };
   }
 
@@ -69,10 +73,20 @@ export class PaymentsController {
     return this.paymentsService.getOrder(user.id, orderId);
   }
 
-  /** 나이스페이 인증 완료 후 form POST (브라우저 리다이렉트) */
+  /** PG 인증 완료 후 form POST (브라우저 리다이렉트) */
+  @Post('return')
+  async paymentReturn(@Body() body: PaymentAuthReturnBody, @Res() res: Response) {
+    const url = await this.paymentsService.handlePaymentReturn(body);
+    return res.redirect(302, url);
+  }
+
+  /** 이전 콜백 URL 호환 */
   @Post('nice/return')
-  async niceReturn(@Body() body: NiceAuthReturnBody, @Res() res: Response) {
-    const url = await this.paymentsService.handleNiceReturn(body);
+  async legacyPaymentReturn(
+    @Body() body: PaymentAuthReturnBody,
+    @Res() res: Response,
+  ) {
+    const url = await this.paymentsService.handlePaymentReturn(body);
     return res.redirect(302, url);
   }
 }

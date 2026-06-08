@@ -6,7 +6,7 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { EnrollmentsModule } from '../enrollments/enrollments.module';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { NicepayService } from './nicepay.service';
+import { PaymentGatewayService } from './payment-gateway.service';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { OpsModule } from '../ops/ops.module';
 import { FeedbackModule } from '../feedback/feedback.module';
@@ -19,7 +19,7 @@ import { FeedbackModule } from '../feedback/feedback.module';
     FeedbackModule,
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, NicepayService, RolesGuard],
+  providers: [PaymentsService, PaymentGatewayService, RolesGuard],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}

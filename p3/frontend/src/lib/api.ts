@@ -215,7 +215,7 @@ export const api = {
   },
   payments: {
     config: () =>
-      apiRequest<{ enabled: boolean; clientId: string | null; sandbox: boolean }>(
+      apiRequest<{ enabled: boolean; clientId: string | null; jsUrl: string }>(
         '/payments/config',
         { auth: false },
       ),

@@ -11,7 +11,7 @@ import { PaymentOrder } from '../entities/payment-order.entity';
 import { Course } from '../entities/course.entity';
 import { Enrollment } from '../entities/enrollment.entity';
 import { EnrollmentsService } from '../enrollments/enrollments.service';
-import { NicepayService, NiceAuthReturnBody } from './nicepay.service';
+import { PaymentGatewayService, PaymentAuthReturnBody } from './payment-gateway.service';
 import { EventsService } from '../ops/events.service';
 import { FeedbackTicketsService } from '../feedback/feedback-tickets.service';
 import {
@@ -30,7 +30,7 @@ export class PaymentsService {
     private readonly courseRepo: Repository<Course>,
     @InjectRepository(Enrollment)
     private readonly enrollRepo: Repository<Enrollment>,
-    private readonly nicepay: NicepayService,
+    private readonly paymentGateway: PaymentGatewayService,
     private readonly enrollmentsService: EnrollmentsService,
     private readonly events: EventsService,
     private readonly feedbackTickets: FeedbackTicketsService,
@@ -42,7 +42,6 @@ export class PaymentsService {
       type: 'feedback',
       orderId,
       plan,
-      sandbox: '1',
     });
     if (tid) q.set('tid', tid);
     return this.redirect(`/checkout/complete?${q.toString()}`);
@@ -121,9 +120,9 @@ export class PaymentsService {
       };
     }
 
-    if (!this.nicepay.isConfigured()) {
+    if (!this.paymentGateway.isConfigured()) {
       throw new ServiceUnavailableException(
-        '결제 모듈이 설정되지 않았습니다. NICEPAY_CLIENT_ID / NICEPAY_SECRET_KEY를 확인하세요.',
+        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY를 확인하세요.',
       );
     }
 
@@ -142,12 +141,11 @@ export class PaymentsService {
     return {
       free: false as const,
       order_type: 'course' as const,
-      clientId: this.nicepay.getPublicClientId(),
+      clientId: this.paymentGateway.getPublicClientId(),
       orderId,
       amount,
       goodsName,
-      returnUrl: this.nicepay.buildReturnUrl(),
-      sandbox: true,
+      returnUrl: this.paymentGateway.buildReturnUrl(),
     };
   }
 
@@ -160,9 +158,9 @@ export class PaymentsService {
     if (amount <= 0) {
       throw new BadRequestException('결제 금액이 올바르지 않습니다.');
     }
-    if (!this.nicepay.isConfigured()) {
+    if (!this.paymentGateway.isConfigured()) {
       throw new ServiceUnavailableException(
-        '결제 모듈이 설정되지 않았습니다. NICEPAY_CLIENT_ID / NICEPAY_SECRET_KEY를 확인하세요.',
+        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY를 확인하세요.',
       );
     }
 
@@ -184,12 +182,11 @@ export class PaymentsService {
       free: false as const,
       order_type: 'feedback' as const,
       plan_id: planId,
-      clientId: this.nicepay.getPublicClientId(),
+      clientId: this.paymentGateway.getPublicClientId(),
       orderId,
       amount,
       goodsName,
-      returnUrl: this.nicepay.buildReturnUrl(),
-      sandbox: true,
+      returnUrl: this.paymentGateway.buildReturnUrl(),
     };
   }
 
@@ -206,7 +203,7 @@ export class PaymentsService {
     return { course_ids: enrolled, amount: 0 };
   }
 
-  async handleNiceReturn(body: NiceAuthReturnBody): Promise<string> {
+  async handlePaymentReturn(body: PaymentAuthReturnBody): Promise<string> {
     const orderId = body.orderId;
     if (!orderId) {
       return this.redirect(
@@ -263,7 +260,7 @@ export class PaymentsService {
       );
     }
 
-    if (!this.nicepay.verifyAuth(body)) {
+    if (!this.paymentGateway.verifyAuth(body)) {
       order.status = 'failed';
       await this.orderRepo.save(order);
       if (isFeedback) {
@@ -284,7 +281,7 @@ export class PaymentsService {
       );
     }
 
-    const approved = await this.nicepay.approve(tid, order.amount);
+    const approved = await this.paymentGateway.approve(tid, order.amount);
     if (approved.resultCode !== '0000') {
       order.status = 'failed';
       order.niceTid = tid;
@@ -362,7 +359,7 @@ export class PaymentsService {
     );
 
     return this.redirect(
-      `/checkout/complete?status=ok&orderId=${encodeURIComponent(orderId)}&courseIds=${enrolled.join(',')}&tid=${encodeURIComponent(order.niceTid ?? '')}&sandbox=1`,
+      `/checkout/complete?status=ok&orderId=${encodeURIComponent(orderId)}&courseIds=${enrolled.join(',')}&tid=${encodeURIComponent(order.niceTid ?? '')}`,
     );
   }
 
@@ -381,8 +378,7 @@ export class PaymentsService {
       course_ids: this.parseCourseIds(order.courseIdsJson),
       plan_id: order.feedbackPlan,
       paid_at: order.paidAt,
-      nice_tid: order.niceTid,
-      sandbox: true,
+      transaction_id: order.niceTid,
     };
   }
 }
