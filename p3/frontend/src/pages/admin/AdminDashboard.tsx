@@ -366,6 +366,42 @@ export default function AdminDashboard() {
               <ArrowRight size={20} color="var(--color-neutral-400)" />
             </Link>
             <Link
+              to="/admin/reviews"
+              className="card"
+              style={{
+                padding: '18px 20px',
+                textDecoration: 'none',
+                color: 'inherit',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'var(--color-warning-50)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Activity size={22} color="var(--color-warning-700)" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>리뷰 검수</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 2 }}>
+                    랜딩 후기 승인·거절
+                  </div>
+                </div>
+              </div>
+              <ArrowRight size={20} color="var(--color-neutral-400)" />
+            </Link>
+            <Link
               to="/admin/ops"
               className="card"
               style={{

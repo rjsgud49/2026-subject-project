@@ -519,5 +519,55 @@ export function mockHandleRequest(method, path, body, userId) {
     return Promise.resolve({});
   }
 
+  if (path === '/reviews' || path.startsWith('/reviews?')) {
+    if (method === 'GET') {
+      return Promise.resolve([
+        { id: 1, author_name: '김수강', rating: 5, body: '모의 면접 피드백이 실전에 큰 도움이 됐습니다.', tagline: 'IT개발', created_at: now },
+      ]);
+    }
+    if (method === 'POST') {
+      return Promise.resolve({ id: Date.now(), ...json, created_at: now });
+    }
+  }
+
+  if (path === '/feedback/tickets' && method === 'GET') {
+    return Promise.resolve({
+      tickets: { doc: 1, video: 0, premium: 0 },
+      purchase_history: [],
+    });
+  }
+
+  if (path === '/feedback/mine' && method === 'GET') {
+    return Promise.resolve([]);
+  }
+
+  if (path === '/payments/prepare-feedback' && method === 'POST') {
+    return Promise.resolve({
+      clientId: 'mock-client',
+      orderId: `MOCK-FB-${Date.now()}`,
+      amount: 39900,
+      goodsName: '문서 피드백 3회',
+      returnUrl: '/api/v1/payments/return',
+    });
+  }
+
+  if (path === '/payments/config' && method === 'GET') {
+    return Promise.resolve({ clientId: 'mock-client', mock: true });
+  }
+
+  if (path === '/notifications/events' && method === 'GET') {
+    return Promise.resolve({
+      events: ['payment_success', 'feedback_answered', 'question_answered'],
+    });
+  }
+
+  if (path === '/notifications/subscriptions' && method === 'GET') {
+    return Promise.resolve([]);
+  }
+
+  if (path === '/notifications/subscriptions' && method === 'POST') {
+    return Promise.resolve({ ok: true });
+  }
+
   return Promise.reject(new Error(`Mock: unhandled ${method} ${path}`));
 }

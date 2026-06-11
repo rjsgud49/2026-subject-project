@@ -1,8 +1,21 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ReviewsService } from './reviews.service';
 import { CurrentUser, AuthUser } from '../common/decorators/current-user.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller()
 export class ReviewsController {
@@ -13,11 +26,30 @@ export class ReviewsController {
     return this.reviews.listPublic(limit ? Number(limit) : 12);
   }
 
-  /** 로그인 사용자 리뷰 (표시명/태그라인은 사용자가 입력) */
   @Post('reviews')
   @UseGuards(AuthGuard('jwt'))
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateReviewDto) {
     return this.reviews.create(user?.id ?? null, dto);
   }
-}
 
+  @Get('admin/reviews/pending')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  listPending() {
+    return this.reviews.listPending();
+  }
+
+  @Patch('admin/reviews/:id/approve')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  approve(@Param('id', ParseIntPipe) id: number) {
+    return this.reviews.approve(id);
+  }
+
+  @Delete('admin/reviews/:id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  reject(@Param('id', ParseIntPipe) id: number) {
+    return this.reviews.reject(id);
+  }
+}

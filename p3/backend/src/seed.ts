@@ -232,18 +232,27 @@ async function run() {
       description: 'NestJS·REST API·인증 흐름을 한 번에.',
       price: 49000,
       published: true,
+      category: '백엔드/서버',
+      interviewType: '기술면접',
+      difficulty: '중급',
     },
     {
       title: 'React 실전 컴포넌트 설계',
       description: '접근성과 재사용을 고려한 UI 패턴.',
       price: 59000,
       published: true,
+      category: '웹/프론트엔드',
+      interviewType: '기술면접',
+      difficulty: '중급',
     },
     {
       title: '(비공개) 신규 강의 준비 중',
       description: '강사만 보는 초안 강의입니다.',
       price: 0,
       published: false,
+      category: '경영/기획',
+      interviewType: '인성면접',
+      difficulty: '초급',
     },
   ];
 
@@ -262,8 +271,16 @@ async function run() {
           instructorId: teacher.id,
           isPublished: s.published,
           curriculumJson: JSON.stringify(curriculum),
+          category: s.category,
+          interviewType: s.interviewType,
+          difficulty: s.difficulty,
         }),
       );
+    } else {
+      exists.category = s.category;
+      exists.interviewType = s.interviewType;
+      exists.difficulty = s.difficulty;
+      await courseRepo.save(exists);
     }
   }
 

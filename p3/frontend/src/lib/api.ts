@@ -1,3 +1,6 @@
+import { friendlyApiError } from '../utils/friendlyError';
+import { handleUnauthorized } from '../utils/authSession';
+
 const BASE = '/api/v1';
 
 const TOKEN_KEY = 'p3_access_token';
@@ -32,8 +35,9 @@ export async function apiRequest<T>(
   };
   if (!res.ok) {
     const m = data.message;
-    const msg = Array.isArray(m) ? m.join(', ') : m;
-    throw new Error(msg || res.statusText || String(res.status));
+    const raw = Array.isArray(m) ? m.join(', ') : m;
+    if (res.status === 401 && auth) handleUnauthorized();
+    throw new Error(friendlyApiError(raw || res.statusText, res.status));
   }
   return data as T;
 }
@@ -85,6 +89,18 @@ export const api = {
         auth: false,
       }),
     me: () => apiRequest<AuthUser>('/auth/me'),
+    forgotPassword: (email: string) =>
+      apiRequest<{ message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+        auth: false,
+      }),
+    resetPassword: (token: string, password: string) =>
+      apiRequest<{ message: string }>('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+        auth: false,
+      }),
   },
   courses: {
     list: (page = 1, size = 12) =>
@@ -113,6 +129,22 @@ export const api = {
       }),
     deleteWebhook: (id: number) =>
       apiRequest<{ ok: boolean }>(`/admin/webhooks/${id}`, { method: 'DELETE' }),
+    pendingReviews: () =>
+      apiRequest<
+        Array<{
+          id: number;
+          display_name: string;
+          tagline: string | null;
+          rating: number;
+          text: string;
+          created_at: string;
+          is_approved: boolean;
+        }>
+      >('/admin/reviews/pending'),
+    approveReview: (id: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/reviews/${id}/approve`, { method: 'PATCH' }),
+    rejectReview: (id: number) =>
+      apiRequest<{ ok: boolean }>(`/admin/reviews/${id}`, { method: 'DELETE' }),
   },
   teacher: {
     dashboard: () => apiRequest<TeacherDashboard>('/teacher/dashboard'),
@@ -128,6 +160,9 @@ export const api = {
       isPublished?: boolean;
       curriculum?: Record<string, unknown>;
       thumbnail_url?: string;
+      category?: string;
+      interview_type?: string;
+      difficulty?: string;
     }) =>
       apiRequest<TeacherCourse>('/teacher/courses', {
         method: 'POST',
@@ -142,6 +177,9 @@ export const api = {
         isPublished: boolean;
         curriculum: Record<string, unknown>;
         thumbnail_url: string;
+        category: string;
+        interview_type: string;
+        difficulty: string;
       }>,
     ) =>
       apiRequest<TeacherCourse>(`/teacher/courses/${id}`, {
@@ -239,6 +277,10 @@ export const api = {
   },
   notifications: {
     events: () => apiRequest<{ events: string[] }>('/ops/events', { auth: false }),
+    capabilities: () =>
+      apiRequest<{ email_delivery: boolean; discord: boolean }>('/ops/capabilities', {
+        auth: false,
+      }),
     list: () => apiRequest<NotificationSubRow[]>('/notifications/subscriptions'),
     upsert: (body: {
       channel: 'email' | 'discord';
@@ -393,6 +435,9 @@ export type TeacherCourse = {
   curriculum?: Record<string, unknown> | null;
   thumbnail_url?: string | null;
   view_count?: number;
+  category?: string | null;
+  interview_type?: string | null;
+  difficulty?: string | null;
 };
 
 export type AdminStats = {

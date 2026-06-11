@@ -53,7 +53,15 @@ export default function InstructorProfile() {
         setCourses(items);
         setTotal(Number(res?.total) || 0);
         if (res?.instructor_meta) {
-          setMeta(res.instructor_meta);
+          const m = res.instructor_meta;
+          setMeta({
+            name: m.name ?? decodedName,
+            bio: m.bio ?? null,
+            profile_html: m.profile_html ?? null,
+            banner_url: m.banner_url ?? null,
+            categories: m.categories ?? [],
+            total_courses: Number(m.total_courses) || 0,
+          });
         } else if (items[0]?.instructor_name) {
           const f = items[0];
           setMeta({
@@ -168,12 +176,16 @@ export default function InstructorProfile() {
             </span>
           </div>
 
-          {profileHtml ? (
-            <div
-              className="instructor-rich"
-              style={{ margin: '0 0 16px' }}
-              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(profileHtml) }}
-            />
+          {profileHtml && profileHtml.replace(/<[^>]+>/g, '').trim() ? (
+            <div style={{ margin: '0 0 16px' }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-neutral-500)', margin: '0 0 8px', letterSpacing: '0.04em' }}>
+                강사 소개
+              </p>
+              <div
+                className="instructor-rich"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(profileHtml) }}
+              />
+            </div>
           ) : bio ? (
             <p style={{ fontSize: 14, color: 'var(--color-neutral-600)', margin: '0 0 16px', lineHeight: 1.65 }}>
               {bio}

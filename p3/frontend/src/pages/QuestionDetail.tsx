@@ -22,7 +22,7 @@ export default function QuestionDetail() {
 
   const q = data?.question;
   const uid = getUserId();
-  const isOwner = q && Number(q.user_id) === Number(uid);
+  const isOwner = q && uid != null && Number(q.user_id) === Number(uid);
 
   const submitAnswer = async (e: FormEvent) => {
     e.preventDefault();

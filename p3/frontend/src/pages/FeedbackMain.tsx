@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useAppSelector } from '../hooks/useRedux';
 import { useRedirectIfNotStudentFeedback } from '../hooks/useRedirectIfNotStudentFeedback';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
-import { useFeedbackSubmissions } from '../hooks/useFeedbackSubmissions';
+import { api } from '../services/api';
 import { formatPrice } from '../utils/format';
 import { FileText, Video, Award, ShoppingBag, PlusCircle, ClipboardList } from 'lucide-react';
 
@@ -22,13 +23,36 @@ const STATUS_MAP = {
   completed:   { label: '완료',      color: 'var(--color-success-700)', bg: 'var(--color-success-50)' },
 };
 
+type RecentSubmission = {
+  id: number;
+  planId: string;
+  planName: string;
+  jobCategory: string;
+  feedbackType: string;
+  status: keyof typeof STATUS_MAP;
+  createdAt: string;
+};
+
 export default function FeedbackMain() {
   useRedirectIfNotStudentFeedback();
   const user = useAppSelector((s) => s.user.user);
-  const { tickets } = useFeedbackTickets(!!user);
-  const { submissions } = useFeedbackSubmissions();
+  const { tickets, loading: ticketsLoading, error: ticketsError } = useFeedbackTickets(!!user);
+  const [recentSubs, setRecentSubs] = useState<RecentSubmission[]>([]);
+  const [subsLoading, setSubsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setRecentSubs([]);
+      return;
+    }
+    setSubsLoading(true);
+    (api as any).feedback.list()
+      .then((data: RecentSubmission[]) => setRecentSubs((data ?? []).slice(0, 3)))
+      .catch(() => setRecentSubs([]))
+      .finally(() => setSubsLoading(false));
+  }, [user]);
+
   const totalTickets = tickets.doc + tickets.video + tickets.premium;
-  const recentSubs = submissions.slice(0, 3);
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '40px 24px' }}>
@@ -103,6 +127,14 @@ export default function FeedbackMain() {
             <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0, color: 'var(--color-neutral-900)' }}>내 이용권 현황</h2>
             <Link to="/feedback/history" style={{ fontSize: 13, color: 'var(--color-primary-600)', fontWeight: 600 }}>신청 내역 보기 →</Link>
           </div>
+          {ticketsError && (
+            <p style={{ fontSize: 13, color: 'var(--color-error-600)', marginBottom: 12 }}>
+              이용권 정보를 불러오지 못했습니다. {ticketsError}
+            </p>
+          )}
+          {ticketsLoading ? (
+            <p style={{ fontSize: 14, color: 'var(--color-neutral-500)' }}>이용권 불러오는 중…</p>
+          ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
             {PLANS.map((p) => {
               const count = tickets[p.id];
@@ -136,6 +168,7 @@ export default function FeedbackMain() {
               );
             })}
           </div>
+          )}
         </div>
       )}
 
@@ -184,7 +217,7 @@ export default function FeedbackMain() {
       </div>
 
       {/* 최근 신청 내역 */}
-      {user && recentSubs.length > 0 && (
+      {user && recentSubs.length > 0 && !subsLoading && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -196,7 +229,7 @@ export default function FeedbackMain() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {recentSubs.map((s) => {
               const st = STATUS_MAP[s.status] ?? STATUS_MAP.pending;
-              const planId = (s as any).planId ?? 'doc';
+              const planId = s.planId ?? 'doc';
               const PlanIcon = PLAN_ICONS[planId] ?? FileText;
               const planData = PLANS.find((p) => p.id === planId);
               return (
@@ -221,10 +254,10 @@ export default function FeedbackMain() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, color: 'var(--color-neutral-800)' }}>
-                      {(s as any).planName} · {(s as any).feedbackType}
+                      {s.planName} · {s.feedbackType}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--color-neutral-500)' }}>
-                      {(s as any).jobCategory} · {new Date((s as any).submittedAt).toLocaleDateString('ko-KR')}
+                      {s.jobCategory} · {new Date(s.createdAt).toLocaleDateString('ko-KR')}
                     </div>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: st.color, background: st.bg, padding: '3px 10px', borderRadius: 'var(--radius-full)', whiteSpace: 'nowrap' }}>

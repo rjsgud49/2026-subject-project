@@ -632,6 +632,25 @@ button { font-family: inherit; }
 .instructor-rich ol {
   padding-left: 1.25em;
 }
+.instructor-rich strong {
+  font-weight: 700;
+}
+.instructor-rich blockquote {
+  margin: 0.75em 0;
+  padding: 0.5em 1em;
+  border-left: 3px solid var(--color-primary-300);
+  color: var(--color-neutral-600);
+  background: var(--color-neutral-50);
+}
+.instructor-rich .ql-align-center {
+  text-align: center;
+}
+.instructor-rich .ql-align-right {
+  text-align: right;
+}
+.instructor-rich .ql-align-justify {
+  text-align: justify;
+}
 
 .teacher-profile-quill .ql-editor {
   min-height: 220px;

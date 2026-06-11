@@ -113,13 +113,14 @@ export default function Landing() {
     if (!canSubmitReview) return;
     setRvSubmitting(true);
     try {
-      await (api as any).reviews.create({
+      const res = await (api as any).reviews.create({
         display_name: rvName.trim(),
         tagline: rvTagline.trim() ? rvTagline.trim() : undefined,
         rating: Number(rvRating),
         text: rvText.trim(),
       });
       setRvDone(true);
+      if (res?.message) setRvError('');
       setRvText('');
       setRvTagline('');
       await loadReviews();
@@ -457,7 +458,7 @@ export default function Landing() {
                 </div>
                 {rvDone && (
                   <span style={{ fontSize: 12, color: 'var(--color-success-700)', background: 'var(--color-success-50)', border: '1px solid var(--color-success-200)', padding: '6px 10px', borderRadius: 999 }}>
-                    등록 완료! 고맙습니다.
+                    접수 완료! 검수 후 랜딩에 노출됩니다.
                   </span>
                 )}
               </div>

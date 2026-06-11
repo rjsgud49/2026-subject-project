@@ -14,6 +14,9 @@ import {
   COURSE_IMAGE_FORMAT_LABEL,
   validateCourseImageFile,
 } from '../../utils/uploadFormats';
+import { INTERVIEW_TYPES, JOB_FIELDS, DIFFICULTIES } from '../../utils/constants';
+
+const JOB_CATEGORIES = JOB_FIELDS.flatMap((g) => g.items);
 
 export default function TeacherCourseForm() {
   const { courseId } = useParams();
@@ -27,6 +30,9 @@ export default function TeacherCourseForm() {
   const [isPublished, setIsPublished] = useState(false);
   const [curriculum, setCurriculum] = useState<CurriculumData>(() => defaultCurriculum());
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [category, setCategory] = useState('');
+  const [interviewType, setInterviewType] = useState('');
+  const [difficulty, setDifficulty] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEdit);
@@ -60,6 +66,9 @@ export default function TeacherCourseForm() {
         setPrice(typeof c.price === 'number' ? c.price : Number(c.price) || 0);
         setIsPublished(!!c.is_published);
         setThumbnailUrl(c.thumbnail_url ?? '');
+        setCategory(c.category ?? '');
+        setInterviewType(c.interview_type ?? '');
+        setDifficulty(c.difficulty ?? '');
         setCurriculum(parseCurriculum(c.curriculum ?? null));
       })
       .catch((e: Error) => {
@@ -86,6 +95,9 @@ export default function TeacherCourseForm() {
         isPublished,
         curriculum: payloadCurriculum,
         thumbnail_url: thumbnailUrl.trim() || undefined,
+        category: category || undefined,
+        interview_type: interviewType || undefined,
+        difficulty: difficulty || undefined,
       };
       if (!Number.isFinite(payload.price) || payload.price < 0) {
         setErr('가격은 0 이상의 숫자로 입력해 주세요.');
@@ -178,6 +190,35 @@ export default function TeacherCourseForm() {
               placeholder="강의 목표, 대상 수강생 등"
             />
           </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
+              직무/분야
+              <select className="ui-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="">선택 (선택)</option>
+                {JOB_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
+              면접 유형
+              <select className="ui-select" value={interviewType} onChange={(e) => setInterviewType(e.target.value)}>
+                <option value="">선택 (선택)</option>
+                {INTERVIEW_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
+              난이도
+              <select className="ui-select" value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                <option value="">선택 (선택)</option>
+                {DIFFICULTIES.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600 }}>
             가격 (원)
             <input

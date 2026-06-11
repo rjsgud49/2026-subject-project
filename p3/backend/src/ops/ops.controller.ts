@@ -37,6 +37,14 @@ export class OpsController {
     return { events: OPS_EVENTS };
   }
 
+  @Get('ops/capabilities')
+  capabilities() {
+    return {
+      email_delivery: Boolean(process.env.SMTP_HOST?.trim()),
+      discord: true,
+    };
+  }
+
   @Get('notifications/subscriptions')
   @UseGuards(AuthGuard('jwt'))
   listSubscriptions(@CurrentUser() user: AuthUser) {

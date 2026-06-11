@@ -26,6 +26,15 @@ export class Course {
   @Column({ type: 'int', default: 0 })
   price: number;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  category: string | null;
+
+  @Column({ name: 'interview_type', type: 'varchar', length: 50, nullable: true })
+  interviewType: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  difficulty: string | null;
+
   @Column({ name: 'instructor_id', type: 'bigint' })
   instructorId: number;
 

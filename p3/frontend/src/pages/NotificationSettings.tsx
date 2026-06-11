@@ -13,13 +13,19 @@ export default function NotificationSettings() {
   const [picked, setPicked] = useState<string[]>(['payment_success', 'feedback_answered']);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [emailDelivery, setEmailDelivery] = useState(true);
 
   const load = () => {
     api.notifications.list().then(setSubs).catch((e: Error) => setErr(e.message));
   };
 
   useEffect(() => {
-    api.notifications.events().then((r) => setEvents(r.events));
+    api.notifications.events()
+      .then((r) => setEvents(r.events))
+      .catch((e: Error) => setErr(e.message || '이벤트 목록을 불러오지 못했습니다.'));
+    api.notifications.capabilities()
+      .then((c) => setEmailDelivery(!!c.email_delivery))
+      .catch(() => setEmailDelivery(false));
     load();
   }, []);
 
@@ -51,6 +57,11 @@ export default function NotificationSettings() {
       </p>
       {err && <p style={{ color: 'var(--color-error-600)' }}>{err}</p>}
       {msg && <p style={{ color: 'var(--color-success-600)' }}>{msg}</p>}
+      {channel === 'email' && !emailDelivery && (
+        <p style={{ fontSize: 13, color: 'var(--color-warning-800)', background: 'var(--color-warning-50)', border: '1px solid var(--color-warning-200)', padding: '12px 14px', borderRadius: 8, marginBottom: 16, lineHeight: 1.6 }}>
+          서버에 SMTP가 설정되어 있지 않아 이메일 알림은 실제로 발송되지 않습니다. Discord Webhook을 사용하거나 운영 환경에 <code>SMTP_HOST</code> 등을 설정해 주세요.
+        </p>
+      )}
 
       <div style={{ display: 'grid', gap: 12, maxWidth: 480, marginBottom: 28 }}>
         <label style={{ fontSize: 14, fontWeight: 600 }}>채널</label>

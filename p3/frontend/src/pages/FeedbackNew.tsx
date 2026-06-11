@@ -26,6 +26,29 @@ const JOB_CATEGORIES = [
 
 const FEEDBACK_TYPES = ['자기소개서', '이력서', '포트폴리오', '면접 영상', '기타'];
 
+const MAX_FILE_BYTES = 30 * 1024 * 1024;
+const MAX_FILES = 5;
+
+function pickValidFiles(
+  incoming: File[],
+  existing: File[],
+): { files: File[]; rejected: boolean } {
+  const next = [...existing];
+  let rejected = false;
+  for (const f of incoming) {
+    if (next.length >= MAX_FILES) {
+      rejected = true;
+      break;
+    }
+    if (f.size > MAX_FILE_BYTES) {
+      rejected = true;
+      continue;
+    }
+    next.push(f);
+  }
+  return { files: next.slice(0, MAX_FILES), rejected };
+}
+
 export default function FeedbackNew() {
   useRedirectIfNotStudentFeedback();
   const navigate = useNavigate();
@@ -77,12 +100,17 @@ export default function FeedbackNew() {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFiles(Array.from(e.target.files));
+    if (!e.target.files) return;
+    const { files: picked, rejected } = pickValidFiles(Array.from(e.target.files), files);
+    if (rejected) {
+      setSubmitError('파일당 30MB 이하, 최대 5개까지 업로드할 수 있습니다.');
+    }
+    setFiles(picked);
   };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    setFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)].slice(0, 5));
+    setFiles((prev) => pickValidFiles(Array.from(e.dataTransfer.files), prev).files);
   };
   const removeFile = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx));
 
@@ -253,7 +281,7 @@ export default function FeedbackNew() {
             </div>
             <p style={{ margin: 0, fontWeight: 600 }}>파일을 드래그하거나 클릭해서 업로드</p>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-muted)' }}>
-              영상(mp4, mov), 문서(pdf, docx, hwp) · 파일당 최대 500MB · 최대 5개
+              영상(mp4, mov), 문서(pdf, docx, hwp) · 파일당 최대 30MB · 최대 5개
             </p>
             <input ref={fileInputRef} type="file" multiple accept=".mp4,.mov,.pdf,.docx,.hwp" style={{ display: 'none' }} onChange={handleFileChange} />
           </div>

@@ -44,21 +44,25 @@ export function useFeedbackTickets(isLoggedIn = true) {
   const [tickets, setTickets] = useState<TicketState>(EMPTY);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
     if (!isLoggedIn) {
       setTickets(EMPTY);
       setPurchaseHistory([]);
+      setError('');
       return;
     }
     setLoading(true);
+    setError('');
     try {
       const data = await api.feedback.tickets();
       setTickets(data.tickets ?? EMPTY);
       setPurchaseHistory(mapHistory(data.purchase_history ?? []));
-    } catch {
+    } catch (e) {
       setTickets(EMPTY);
       setPurchaseHistory([]);
+      setError(e instanceof Error ? e.message : '이용권 정보를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
@@ -83,6 +87,7 @@ export function useFeedbackTickets(isLoggedIn = true) {
     useTicket,
     refresh,
     loading,
+    error,
     TICKETS_PER_PURCHASE,
   };
 }

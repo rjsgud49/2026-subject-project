@@ -1,4 +1,6 @@
-import { DEFAULT_USER_ID, SESSION_KEY } from '../utils/constants';
+import { SESSION_KEY } from '../utils/constants';
+import { friendlyApiError } from '../utils/friendlyError';
+import { handleUnauthorized } from '../utils/authSession';
 import { mockHandleRequest } from './mockData';
 
 const BASE = '/api/v1';
@@ -24,7 +26,7 @@ export function getUserId() {
   } catch (_) {
     /* ignore */
   }
-  return DEFAULT_USER_ID;
+  return null;
 }
 
 function qs(params) {
@@ -98,7 +100,7 @@ async function request(path, options = {}) {
     const q = path.includes('?') ? path.slice(path.indexOf('?')) : '';
     const clean = path.startsWith(BASE) ? path.slice(BASE.length) || '/' : path;
     const mockPath = clean + q;
-    return mockHandleRequest(method, mockPath, body, getUserId());
+    return mockHandleRequest(method, mockPath, body, getUserId() ?? 1);
   }
 
   const url = path.startsWith('http') ? path : `${BASE}${path}`;
@@ -117,8 +119,9 @@ async function request(path, options = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const m = data.message;
-    const msg = Array.isArray(m) ? m.join(', ') : m;
-    throw new Error(msg || res.statusText || String(res.status));
+    const raw = Array.isArray(m) ? m.join(', ') : m;
+    if (res.status === 401 && options.auth !== false) handleUnauthorized();
+    throw new Error(friendlyApiError(raw || res.statusText, res.status));
   }
   return data;
 }
@@ -135,8 +138,9 @@ async function requestFormData(path, formData) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const m = data.message;
-    const msg = Array.isArray(m) ? m.join(', ') : m;
-    throw new Error(msg || res.statusText || String(res.status));
+    const raw = Array.isArray(m) ? m.join(', ') : m;
+    if (res.status === 401) handleUnauthorized();
+    throw new Error(friendlyApiError(raw || res.statusText, res.status));
   }
   return data;
 }
@@ -215,6 +219,18 @@ export const api = {
       return data.user;
     },
     me: () => request('/auth/me'),
+    forgotPassword: (email) =>
+      request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+        auth: false,
+      }),
+    resetPassword: (token, password) =>
+      request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+        auth: false,
+      }),
   },
   courses: {
     list: (params) => request(`/courses${qs(params)}`),
@@ -258,13 +274,9 @@ export const api = {
   },
   enrollments: {
     list: async (status) => {
-      try {
-        const rows = await request('/enrollments');
-        const arr = Array.isArray(rows) ? rows : [];
-        return arr.map(mapEnrollmentFromP2);
-      } catch {
-        return [];
-      }
+      const rows = await request('/enrollments');
+      const arr = Array.isArray(rows) ? rows : [];
+      return arr.map(mapEnrollmentFromP2);
     },
     enroll: (courseId) =>
       request('/enrollments', {

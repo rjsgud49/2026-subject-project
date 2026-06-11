@@ -27,20 +27,21 @@ import TeacherCourseForm from './pages/teacher/TeacherCourseForm';
 import TeacherProfile from './pages/teacher/TeacherProfile';
 import TeacherSettlement from './pages/teacher/TeacherSettlement';
 import TeacherFeedback from './pages/teacher/TeacherFeedback';
-import StudentDashboard from './pages/student/StudentDashboard';
-import StudentBrowse from './pages/student/StudentBrowse';
-import StudentMyCourses from './pages/student/StudentMyCourses';
 import StudentFeedbackNew from './pages/student/StudentFeedbackNew';
-import StudentFeedbackList from './pages/student/StudentFeedbackList';
 import StudentFeedbackDetail from './pages/student/StudentFeedbackDetail';
 import NotificationSettings from './pages/NotificationSettings';
 import AdminOps from './pages/admin/AdminOps';
+import AdminReviews from './pages/admin/AdminReviews';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<MainLayout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/courses" element={<CourseList />} />
@@ -126,6 +127,14 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/reviews"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <AdminReviews />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/settings/notifications"
           element={
             <ProtectedRoute>
@@ -191,38 +200,10 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/student"
-          element={
-            <ProtectedRoute roles={['student']}>
-              <StudentDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/browse"
-          element={
-            <ProtectedRoute roles={['student']}>
-              <StudentBrowse />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/my"
-          element={
-            <ProtectedRoute roles={['student']}>
-              <StudentMyCourses />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/student/feedback"
-          element={
-            <ProtectedRoute roles={['student']}>
-              <StudentFeedbackList />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/student" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/student/browse" element={<Navigate to="/courses" replace />} />
+        <Route path="/student/my" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/student/feedback" element={<Navigate to="/feedback/history" replace />} />
         <Route
           path="/student/feedback/new"
           element={

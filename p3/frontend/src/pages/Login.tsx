@@ -140,7 +140,12 @@ export default function Login() {
             </Button>
           </form>
 
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 20, marginBottom: 0 }}>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 16, marginBottom: 0 }}>
+            <Link to="/forgot-password" style={{ color: 'var(--color-primary-600)', fontWeight: 600 }}>
+              비밀번호를 잊으셨나요?
+            </Link>
+          </p>
+          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-neutral-500)', marginTop: 12, marginBottom: 0 }}>
             계정이 없나요?{' '}
             <Link to="/signup" style={{ color: 'var(--color-primary-600)', fontWeight: 600 }}>
               회원가입

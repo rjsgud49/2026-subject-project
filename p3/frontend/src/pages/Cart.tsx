@@ -11,6 +11,7 @@ import Button from '../components/Button';
 import { formatPrice } from '../utils/format';
 import { openPaymentCheckout } from '../utils/paymentCheckout';
 import { api } from '../services/api';
+import { isAuthError } from '../utils/friendlyError';
 import { Lock, ShoppingCart, Trash2, CreditCard } from 'lucide-react';
 
 export default function Cart() {
@@ -136,7 +137,9 @@ export default function Cart() {
   }
 
   const loading = status === 'loading';
-  const empty = !loading && (!items?.length);
+  const loadFailed = status === 'failed';
+  const empty = !loading && !loadFailed && (!items?.length);
+  const authError = loadFailed && isAuthError(error);
 
   return (
     <div style={{ maxWidth: 880, margin: '0 auto', padding: '40px 24px' }}>
@@ -147,28 +150,34 @@ export default function Cart() {
         </p>
       </div>
 
-      {error && status === 'failed' && (
+      {error && loadFailed && (
         <div
           role="alert"
           style={{
             marginBottom: 16,
-            padding: '12px 14px',
+            padding: '14px 16px',
             borderRadius: 'var(--radius-md)',
             background: 'var(--color-error-50)',
             border: '1px solid var(--color-error-100)',
             color: 'var(--color-error-700)',
             fontSize: 14,
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 12,
-            justifyContent: 'space-between',
+            lineHeight: 1.6,
           }}
         >
-          <span>{error}</span>
-          <Button size="sm" variant="secondary" onClick={() => void dispatch(fetchCart())}>
-            다시 시도
-          </Button>
+          <p style={{ margin: '0 0 12px', fontWeight: 600 }}>
+            {authError ? '장바구니를 불러올 수 없습니다' : '일시적인 오류가 발생했습니다'}
+          </p>
+          <p style={{ margin: '0 0 14px' }}>{error}</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {authError && (
+              <Button size="sm" onClick={() => nav('/login', { state: { from: '/cart' } })}>
+                로그인하기
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" onClick={() => void dispatch(fetchCart())}>
+              다시 시도
+            </Button>
+          </div>
         </div>
       )}
 

@@ -87,6 +87,9 @@ export class TeacherService {
       curriculum: this.parseCurriculumJson(c.curriculumJson),
       thumbnail_url: c.thumbnailUrl,
       view_count: c.viewCount ?? 0,
+      category: c.category,
+      interview_type: c.interviewType,
+      difficulty: c.difficulty,
     };
   }
 
@@ -223,6 +226,9 @@ export class TeacherService {
       curriculumJson:
         dto.curriculum != null ? JSON.stringify(dto.curriculum) : null,
       thumbnailUrl: dto.thumbnail_url ?? null,
+      category: dto.category ?? null,
+      interviewType: dto.interview_type ?? null,
+      difficulty: dto.difficulty ?? null,
       viewCount: 0,
     });
     await this.courseRepo.save(c);
@@ -246,6 +252,11 @@ export class TeacherService {
     if (dto.thumbnail_url !== undefined) {
       c.thumbnailUrl = dto.thumbnail_url ?? null;
     }
+    if (dto.category !== undefined) c.category = dto.category ?? null;
+    if (dto.interview_type !== undefined) {
+      c.interviewType = dto.interview_type ?? null;
+    }
+    if (dto.difficulty !== undefined) c.difficulty = dto.difficulty ?? null;
     await this.courseRepo.save(c);
     return this.oneForTeacher(c.id, instructorId);
   }

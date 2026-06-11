@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { logout } from '../features/userSlice';
 import { fetchCart } from '../features/cartSlice';
 import { getToken, setToken } from '../services/api';
+import { UNAUTHORIZED_EVENT } from '../utils/authSession';
 import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
 import {
@@ -46,6 +47,18 @@ export default function MainLayout() {
     }
     if (user?.role === 'student' && getToken()) dispatch(fetchCart());
   }, [user?.id, user?.role, dispatch]);
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      dispatch(logout());
+      setToken(null);
+      if (pathname !== '/login' && pathname !== '/signup') {
+        nav('/login', { state: { from: pathname }, replace: true });
+      }
+    };
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [dispatch, nav, pathname]);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

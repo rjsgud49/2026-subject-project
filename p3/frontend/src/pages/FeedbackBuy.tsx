@@ -75,9 +75,16 @@ export default function FeedbackBuy() {
   const plan = PLANS.find((p) => p.id === selected);
 
   useEffect(() => {
-    if (searchParams.get('paid') === '1') {
+    const paid = searchParams.get('paid') === '1';
+    const feedbackOk =
+      searchParams.get('status') === 'ok' && searchParams.get('type') === 'feedback';
+    if (paid || feedbackOk) {
       refresh();
       setShowModal(true);
+      const planParam = searchParams.get('plan');
+      if (planParam === 'doc' || planParam === 'video' || planParam === 'premium') {
+        setSelected(planParam);
+      }
     }
   }, [searchParams, refresh]);
 

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../hooks/useRedux';
 import { fetchEnrollments, setCheckoutCourseIds } from '../features/enrollmentSlice';
 import { fetchCart } from '../features/cartSlice';
+import { useFeedbackTickets } from '../hooks/useFeedbackTickets';
 import Button from '../components/Button';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
@@ -16,6 +17,8 @@ export default function CheckoutComplete() {
   const dispatch = useAppDispatch();
   const [params] = useSearchParams();
   const storeIds = useAppSelector((s) => s.enrollment.checkoutCourseIds) as number[];
+  const user = useAppSelector((s) => s.user.user);
+  const { refresh: refreshTickets } = useFeedbackTickets(!!user);
 
   const status = params.get('status');
   const isOk = status === 'ok' || (!status && storeIds?.length > 0);
@@ -53,7 +56,10 @@ export default function CheckoutComplete() {
       dispatch(fetchEnrollments());
       dispatch(fetchCart());
     }
-  }, [dispatch, courseIdsParam, courseIds.length, isOk, isFeedback]);
+    if (isOk && isFeedback && user) {
+      void refreshTickets();
+    }
+  }, [dispatch, courseIdsParam, courseIds.length, isOk, isFeedback, user, refreshTickets]);
 
   const iconBg = isFail ? 'var(--color-error-50)' : 'var(--color-success-50)';
   const iconColor = isFail ? 'var(--color-error-600)' : 'var(--color-success-600)';

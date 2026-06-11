@@ -37,4 +37,19 @@ export class CreateCourseDto {
   @IsString()
   @MaxLength(500)
   thumbnail_url?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  interview_type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  difficulty?: string;
 }

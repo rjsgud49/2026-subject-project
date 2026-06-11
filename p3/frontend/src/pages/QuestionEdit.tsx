@@ -21,7 +21,7 @@ export default function QuestionEdit() {
   useEffect(() => {
     if (data?.question) {
       const uid = getUserId();
-      if (Number(data.question.user_id) !== Number(uid)) {
+      if (uid == null || Number(data.question.user_id) !== Number(uid)) {
         nav(`/questions/${questionId}`);
         return;
       }
