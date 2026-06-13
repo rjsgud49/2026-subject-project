@@ -154,7 +154,7 @@ PostgreSQL만 띄웁니다. 앱은 위 npm 명령으로 실행하세요.
 
 - 백엔드: NestJS 10, TypeORM, PostgreSQL, JWT, `@nestjs/schedule`, helmet, nodemailer
 
-- 프론트: React 18, TypeScript, Vite, React Router
+- 프론트: React 19, TypeScript, Vite, React Router 7
 
 - 결제: PG Server 승인 연동
 
