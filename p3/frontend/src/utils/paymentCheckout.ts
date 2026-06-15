@@ -222,11 +222,11 @@ export async function openPaymentCheckout(
     startPaymentViewportFix();
     watchPaymentLayerClose(onClosed);
 
-    window.AUTHNICE!.requestPay({
+    const payOpts: Record<string, unknown> = {
       clientId: prep.clientId,
       method: 'card',
       orderId: prep.orderId,
-      amount: prep.amount,
+      amount: Number(prep.amount),
       goodsName: prep.goodsName,
       returnUrl: prep.returnUrl,
       buyerName: buyer?.name,
@@ -234,14 +234,17 @@ export async function openPaymentCheckout(
       buyerTel: buyer?.tel,
       disableScroll: false,
       zIdxHigher: true,
-      fnError: (result: { errorMsg?: string; message?: string }) => {
+      // 나이스페이 SDK는 arrow function 을 fnError 로 인식하지 않는 경우가 있음
+      fnError: function (result: { errorMsg?: string; message?: string }) {
         const msg = `${result?.errorMsg ?? ''} ${result?.message ?? ''}`.trim();
         if (!/취소|cancel|I009/i.test(msg) && msg) {
           window.alert(msg || '결제창 호출에 실패했습니다.');
         }
         onClosed();
       },
-    });
+    };
+
+    window.AUTHNICE!.requestPay(payOpts);
 
     window.setTimeout(fitPaymentLayerToViewport, 100);
     window.setTimeout(fitPaymentLayerToViewport, 500);
