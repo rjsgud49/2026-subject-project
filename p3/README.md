@@ -167,11 +167,12 @@ curl -s https://olp.rjsgud.com/api/v1/payments/config
 
 ```bash
 cd p3/backend
-psql -U postgres -d p2_lms -f scripts/migrate-production.sql
-npm run build && pm2 restart p3-backend --update-env
+bash scripts/ec2-recover.sh
 ```
 
-`column User.phone does not exist` / `PaymentOrder.orderType` 오류는 위 마이그레이션으로 해결합니다.
+또는 `.env`에 `DB_SYNC=true` 한 줄 추가 → `pm2 restart p3-backend --update-env` → 기동 확인 후 `DB_SYNC` 삭제.
+
+`column User.phone does not exist` / `PaymentOrder.orderType` / **502 Bad Gateway** 는 위로 해결합니다.
 
 ### 프론트 ↔ 백엔드 연결 안 될 때
 

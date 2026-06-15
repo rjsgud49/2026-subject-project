@@ -12,43 +12,7 @@ ALTER TABLE p2_courses ADD COLUMN IF NOT EXISTS category varchar(50);
 ALTER TABLE p2_courses ADD COLUMN IF NOT EXISTS interview_type varchar(50);
 ALTER TABLE p2_courses ADD COLUMN IF NOT EXISTS difficulty varchar(20);
 
--- p3_payment_orders (기존 테이블에 컬럼 추가 — camelCase 잔재 호환)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'p3_payment_orders') THEN
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS order_type varchar(20) DEFAULT 'course';
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS feedback_plan varchar(20);
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS course_ids_json text DEFAULT '[]';
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS goods_name varchar(120);
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS nice_tid varchar(40);
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS nice_result_code varchar(10);
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS nice_result_msg varchar(200);
-    ALTER TABLE p3_payment_orders ADD COLUMN IF NOT EXISTS paid_at timestamptz;
-    -- 구버전 camelCase 컬럼이 있으면 snake_case 로 이전
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'p3_payment_orders' AND column_name = 'orderType') THEN
-      UPDATE p3_payment_orders SET order_type = COALESCE(order_type, "orderType") WHERE order_type IS NULL;
-    END IF;
-  ELSE
-    CREATE TABLE p3_payment_orders (
-      id serial PRIMARY KEY,
-      order_id varchar(64) NOT NULL UNIQUE,
-      user_id int NOT NULL,
-      order_type varchar(20) NOT NULL DEFAULT 'course',
-      feedback_plan varchar(20),
-      course_ids_json text NOT NULL DEFAULT '[]',
-      amount int NOT NULL,
-      goods_name varchar(120) NOT NULL,
-      status varchar(20) NOT NULL DEFAULT 'pending',
-      nice_tid varchar(40),
-      nice_result_code varchar(10),
-      nice_result_msg varchar(200),
-      created_at timestamptz NOT NULL DEFAULT now(),
-      updated_at timestamptz NOT NULL DEFAULT now(),
-      paid_at timestamptz
-    );
-  END IF;
-END $$;
-
+-- p3_payment_orders camelCase→snake_case: scripts/migrate-payment-orders.sql 도 실행하세요.
 -- p3_reviews
 CREATE TABLE IF NOT EXISTS p3_reviews (
   id serial PRIMARY KEY,

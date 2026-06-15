@@ -60,7 +60,9 @@ import { ReviewsModule } from './reviews/reviews.module';
         AuditLog,
         WebhookEndpoint,
       ],
-      synchronize: process.env.NODE_ENV !== 'production',
+      synchronize:
+        process.env.DB_SYNC === 'true' ||
+        process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
       retryAttempts: 2,
       retryDelay: 1500,
