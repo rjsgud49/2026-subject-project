@@ -122,7 +122,7 @@ export class PaymentsService {
 
     if (!this.paymentGateway.isConfigured()) {
       throw new ServiceUnavailableException(
-        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY를 확인하세요.',
+        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY (또는 NICEPAY_CLIENT_ID / NICEPAY_SECRET_KEY)를 확인하세요.',
       );
     }
 
@@ -160,7 +160,7 @@ export class PaymentsService {
     }
     if (!this.paymentGateway.isConfigured()) {
       throw new ServiceUnavailableException(
-        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY를 확인하세요.',
+        '결제 모듈이 설정되지 않았습니다. PAYMENT_CLIENT_ID / PAYMENT_SECRET_KEY (또는 NICEPAY_CLIENT_ID / NICEPAY_SECRET_KEY)를 확인하세요.',
       );
     }
 

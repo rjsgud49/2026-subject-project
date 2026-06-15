@@ -94,7 +94,7 @@ npm run start:dev
 
 |------|------|
 
-| `PAYMENT_*` | 온라인 결제 PG 연동 |
+| `PAYMENT_*` | 온라인 결제 PG 연동 (`NICEPAY_*` 별칭 동일) |
 
 | `SMTP_HOST` 등 | 이메일 알림 (없으면 서버 로그로 대체) |
 
@@ -129,6 +129,59 @@ npm run dev
 - 알림 설정: `/settings/notifications`
 
 
+
+## 배포 (EC2)
+
+GitHub Actions가 `git pull` 후 빌드·`pm2 restart`만 수행합니다. **`.env`는 Git에 포함되지 않으므로 서버에 직접 설정**해야 합니다.
+
+```bash
+# EC2 — 최초 1회
+cd ~/2026-subject-project/p3/backend
+cp .env.example .env
+nano .env   # 아래 항목 입력 후 저장
+npm run build
+pm2 start ecosystem.config.cjs   # 또는 pm2 restart p3-backend --update-env
+```
+
+운영 `.env` 필수 예시:
+
+```env
+NODE_ENV=production
+PORT=3000
+CORS_ORIGIN=https://olp.rjsgud.com
+PAYMENT_CLIENT_ID=나이스페이_클라이언트_ID
+PAYMENT_SECRET_KEY=나이스페이_시크릿키
+PAYMENT_RETURN_BASE=https://olp.rjsgud.com
+```
+
+설정 확인:
+
+```bash
+curl -s https://olp.rjsgud.com/api/v1/payments/config
+# {"enabled":true,"clientId":"...","jsUrl":"..."} 이면 정상
+```
+
+`enabled: false`이면 `.env` 키 누락 또는 PM2 재시작 필요 (`pm2 restart p3-backend --update-env`). 서버 로그에 `결제 PG 미설정` 경고가 보이면 동일 원인입니다.
+
+**운영 DB 스키마** (`NODE_ENV=production`은 자동 동기화 안 함): 최초 1회
+
+```bash
+cd p3/backend
+psql -U postgres -d p2_lms -f scripts/migrate-production.sql
+npm run build && pm2 restart p3-backend --update-env
+```
+
+`column User.phone does not exist` / `PaymentOrder.orderType` 오류는 위 마이그레이션으로 해결합니다.
+
+### 프론트 ↔ 백엔드 연결 안 될 때
+
+| 환경 | 증상 | 확인 |
+|------|------|------|
+| **로컬** | `ECONNREFUSED`, 강의 목록 실패 | PostgreSQL 실행 → `p3/backend`에서 `npm run start:dev` → `p3/frontend`에서 `npm run dev` (5174). Vite 로그 `[vite] /api → http://127.0.0.1:3000` 확인 |
+| **배포** | 502 Bad Gateway | EC2에서 `pm2 status`, `pm2 logs p3-backend`. `npm install && npm run build` 후 재시작. `curl http://127.0.0.1:3000/api/v1/health` |
+| **배포** | 200인데 API만 실패 | nginx에 `/api/` → `127.0.0.1:3000` 프록시 필요. 예시: `p3/deploy/nginx-olp.example.conf` |
+
+로컬 DB 비밀번호 오류(`password authentication failed`)면 `p3/backend/.env`의 `DB_PASSWORD`를 PostgreSQL 실제 비밀번호와 맞추세요.
 
 ## Docker (로컬 DB)
 

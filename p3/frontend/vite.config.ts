@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 
 const DEFAULT_PORT = 3000;
 
-/** `p2/backend/.env`의 PORT — Nest와 Vite 프록시 포트를 맞추기 위함 */
+/** `p3/backend/.env`의 PORT — Nest와 Vite 프록시 포트를 맞추기 위함 */
 function readPortFromBackendDotEnv(filePath: string): number | null {
   if (!existsSync(filePath)) return null;
   try {
@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
           console.info(`[vite] /api → ${target}`);
           if (!env.VITE_API_PROXY_TARGET && portFromFile == null) {
             console.info(
-              `[vite] (힌트) ${backendEnvPath} 없음 → 기본 포트 ${DEFAULT_PORT}. 백엔드 PORT가 다르면 p2/backend/.env에 PORT=... 추가 또는 프론트 .env에 VITE_API_PROXY_TARGET 설정`,
+              `[vite] (힌트) ${backendEnvPath} 없음 → 기본 포트 ${DEFAULT_PORT}. 백엔드 PORT가 다르면 p3/backend/.env에 PORT=... 추가 또는 프론트 .env에 VITE_API_PROXY_TARGET 설정`,
             );
           }
         },

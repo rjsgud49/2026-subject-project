@@ -20,7 +20,7 @@ import EmptyState from '../components/EmptyState';
 export default function CourseList() {
   const [searchParams] = useSearchParams();
   const dispatch = useAppDispatch();
-  const { filters, items, total, size, listStatus, viewMode } = useAppSelector((s) => s.courses);
+  const { filters, items, total, size, listStatus, listError, viewMode } = useAppSelector((s) => s.courses);
   const enrollments = useAppSelector((s) => s.enrollment.list);
   const user = useAppSelector((s) => s.user.user);
 
@@ -110,12 +110,25 @@ export default function CourseList() {
           {listStatus === 'failed' && (
             <div style={{ padding: '20px', background: 'var(--color-error-50)', borderRadius: 8, border: '1px solid var(--color-error-100)', fontSize: 14, color: 'var(--color-error-700)', lineHeight: 1.6 }}>
               <strong>강의 목록을 불러오지 못했습니다.</strong>
+              {listError && (
+                <p style={{ margin: '8px 0 0', color: 'var(--color-error-600)', fontSize: 13 }}>{listError}</p>
+              )}
               <p style={{ margin: '10px 0 0', color: 'var(--color-neutral-700)' }}>
-                백엔드가 꺼져 있으면 프록시 연결이 거절됩니다. 터미널에서 <code style={{ fontSize: 13 }}>p2/backend</code>에서{' '}
-                <code style={{ fontSize: 13 }}>npm run start:dev</code>을 실행하세요. Vite는 <code style={{ fontSize: 13 }}>p2/backend/.env</code>의{' '}
-                <code style={{ fontSize: 13 }}>PORT</code>(없으면 기본 3000)으로 <code style={{ fontSize: 13 }}>/api</code>를 프록시합니다. 다른 주소를 쓰려면{' '}
-                <code style={{ fontSize: 13 }}>p2/frontend/.env</code>에 <code style={{ fontSize: 13 }}>VITE_API_PROXY_TARGET</code> 전체 URL을 지정하세요.{' '}
-                백엔드 없이 쓰려면 프론트 <code style={{ fontSize: 13 }}>.env</code>에 <code style={{ fontSize: 13 }}>VITE_USE_MOCK=true</code>를 넣어 주세요.
+                {import.meta.env.DEV ? (
+                  <>
+                    백엔드가 꺼져 있으면 프록시 연결이 거절됩니다. 터미널에서 <code style={{ fontSize: 13 }}>p3/backend</code>에서{' '}
+                    <code style={{ fontSize: 13 }}>npm run start:dev</code>을 실행하세요. Vite는 <code style={{ fontSize: 13 }}>p3/backend/.env</code>의{' '}
+                    <code style={{ fontSize: 13 }}>PORT</code>(없으면 기본 3000)으로 <code style={{ fontSize: 13 }}>/api</code>를 프록시합니다. 다른 주소를 쓰려면{' '}
+                    <code style={{ fontSize: 13 }}>p3/frontend/.env</code>에 <code style={{ fontSize: 13 }}>VITE_API_PROXY_TARGET</code> 전체 URL을 지정하세요.{' '}
+                    백엔드 없이 쓰려면 프론트 <code style={{ fontSize: 13 }}>.env</code>에 <code style={{ fontSize: 13 }}>VITE_USE_MOCK=true</code>를 넣어 주세요.
+                  </>
+                ) : (
+                  <>
+                    서버 API에 연결하지 못했습니다. EC2에서 <code style={{ fontSize: 13 }}>pm2 status</code>로 <code style={{ fontSize: 13 }}>p3-backend</code>가{' '}
+                    <code style={{ fontSize: 13 }}>online</code>인지 확인하고, <code style={{ fontSize: 13 }}>npm install && npm run build</code> 후{' '}
+                    <code style={{ fontSize: 13 }}>pm2 restart p3-backend --update-env</code>를 실행하세요.
+                  </>
+                )}
               </p>
             </div>
           )}

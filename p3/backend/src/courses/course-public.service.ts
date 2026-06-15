@@ -75,10 +75,13 @@ export class CoursePublicService {
         qb.orderBy('c.price', 'DESC');
         break;
       case 'popular':
-        qb.orderBy(
-          `(SELECT COUNT(*)::int FROM p2_enrollments en WHERE en.course_id = c.id)`,
-          'DESC',
-        ).addOrderBy('c.viewCount', 'DESC').addOrderBy('c.createdAt', 'DESC');
+        qb.addSelect(
+          '(SELECT COUNT(*)::int FROM p2_enrollments en WHERE en.course_id = c.id)',
+          'enrollment_count',
+        )
+          .orderBy('enrollment_count', 'DESC')
+          .addOrderBy('c.viewCount', 'DESC')
+          .addOrderBy('c.createdAt', 'DESC');
         break;
       default:
         qb.orderBy('c.createdAt', 'DESC');
