@@ -7,6 +7,7 @@ import {
   Clock,
   Copy,
   RefreshCw,
+  Search,
   Server,
   Trash2,
   Webhook,
@@ -133,6 +134,7 @@ export default function AdminOps() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [busy, setBusy] = useState<'sched' | 'sched-force' | 'test' | 'webhook' | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [logSearchInput, setLogSearchInput] = useState('');
   const [logFilter, setLogFilter] = useState('');
 
   const load = useCallback(async (silent = false) => {
@@ -182,6 +184,15 @@ export default function AdminOps() {
         String(l.user_id ?? '').includes(q),
     );
   }, [logs, logFilter]);
+
+  const applyLogSearch = () => {
+    setLogFilter(logSearchInput.trim());
+  };
+
+  const clearLogSearch = () => {
+    setLogSearchInput('');
+    setLogFilter('');
+  };
 
   const toggleEvent = (ev: string) => {
     setPickedEvents((prev) => (prev.includes(ev) ? prev.filter((x) => x !== ev) : [...prev, ev]));
@@ -639,15 +650,54 @@ export default function AdminOps() {
 
       {tab === 'logs' && (
         <SectionCard title="감사 로그" desc="관리자·운영 API 호출 기록 (최근 80건)" icon={Activity}>
-          <div style={{ marginBottom: 14 }}>
-            <input
-              className="ui-input"
-              placeholder="action, resource, user_id 검색..."
-              value={logFilter}
-              onChange={(e) => setLogFilter(e.target.value)}
-              style={{ maxWidth: 360, width: '100%' }}
-            />
+          <div
+            style={{
+              marginBottom: 14,
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 200, maxWidth: 400 }}>
+              <Search
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--color-neutral-400)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <input
+                className="ui-input"
+                type="search"
+                placeholder="작업, 리소스, 사용자 ID 검색"
+                value={logSearchInput}
+                onChange={(e) => setLogSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') applyLogSearch();
+                }}
+                aria-label="감사 로그 검색"
+                style={{ paddingLeft: 40, width: '100%' }}
+              />
+            </div>
+            <Button variant="secondary" size="sm" onClick={applyLogSearch}>
+              검색
+            </Button>
+            {logFilter && (
+              <Button variant="ghost" size="sm" onClick={clearLogSearch}>
+                초기화
+              </Button>
+            )}
           </div>
+          {logFilter && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--color-neutral-500)' }}>
+              「{logFilter}」 검색 결과 {filteredLogs.length}건
+            </p>
+          )}
           {filteredLogs.length === 0 ? (
             <p style={{ margin: 0, fontSize: 14, color: 'var(--color-neutral-500)' }}>
               {logs.length === 0 ? '아직 감사 로그가 없습니다. Webhook 등록·스케줄 실행·테스트 이벤트를 시도해 보세요.' : '검색 결과가 없습니다.'}
