@@ -38,15 +38,38 @@ CREATE TABLE IF NOT EXISTS p3_study_notes (
 
 -- p3_notification_subscriptions / webhooks: scripts/migrate-ops-tables.sql 실행
 
--- p3_audit_logsCREATE TABLE IF NOT EXISTS p3_audit_logs (
+-- p3_audit_logs
+CREATE TABLE IF NOT EXISTS p3_audit_logs (
   id bigserial PRIMARY KEY,
-  actor_id int,
+  user_id bigint,
   action varchar(80) NOT NULL,
-  resource_type varchar(40),
+  resource varchar(80) NOT NULL,
   resource_id varchar(64),
   meta_json text,
+  ip varchar(64),
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS user_id bigint;
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS resource varchar(80) NOT NULL DEFAULT '';
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS resource_id varchar(64);
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS meta_json text;
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS ip varchar(64);
+ALTER TABLE p3_audit_logs ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'p3_audit_logs' AND column_name = 'actor_id'
+  ) THEN
+    UPDATE p3_audit_logs SET user_id = actor_id WHERE user_id IS NULL AND actor_id IS NOT NULL;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'p3_audit_logs' AND column_name = 'resource_type'
+  ) THEN
+    UPDATE p3_audit_logs SET resource = resource_type WHERE resource IS NULL OR resource = '';
+  END IF;
+END $$;
 
 -- p3_webhook_endpoints: scripts/migrate-ops-tables.sql
 

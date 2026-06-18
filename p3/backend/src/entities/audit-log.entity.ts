@@ -24,7 +24,7 @@ export class AuditLog {
   @Column({ name: 'resource_id', type: 'varchar', length: 64, nullable: true })
   resourceId: string | null;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'meta_json', type: 'text', nullable: true })
   metaJson: string | null;
 
   @Column({ type: 'varchar', length: 64, nullable: true })
