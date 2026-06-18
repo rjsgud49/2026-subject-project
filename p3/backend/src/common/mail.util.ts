@@ -2,6 +2,11 @@ import { Logger } from '@nestjs/common';
 
 const logger = new Logger('Mail');
 
+function smtpPass(): string {
+  const raw = process.env.SMTP_PASS ?? '';
+  return raw.replace(/^["']|["']$/g, '');
+}
+
 export async function sendTransactionalEmail(
   to: string,
   subject: string,
@@ -18,7 +23,7 @@ export async function sendTransactionalEmail(
     port: parseInt(process.env.SMTP_PORT ?? '587', 10),
     secure: process.env.SMTP_SECURE === 'true',
     auth: process.env.SMTP_USER
-      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' }
+      ? { user: process.env.SMTP_USER, pass: smtpPass() }
       : undefined,
   });
   await transport.sendMail({

@@ -129,6 +129,16 @@ export const api = {
       }),
     deleteWebhook: (id: number) =>
       apiRequest<{ ok: boolean }>(`/admin/webhooks/${id}`, { method: 'DELETE' }),
+    runScheduler: (force_expire_pending = false) =>
+      apiRequest<{ expired_orders: number; reminded_teachers: number }>(
+        '/admin/ops/scheduler/run',
+        { method: 'POST', body: JSON.stringify({ force_expire_pending }) },
+      ),
+    emitTestEvent: (event: string, user_ids?: number[]) =>
+      apiRequest<{ ok: boolean; event: string; user_ids: number[] }>(
+        '/admin/ops/test-event',
+        { method: 'POST', body: JSON.stringify({ event, user_ids }) },
+      ),
     pendingReviews: () =>
       apiRequest<
         Array<{

@@ -1,6 +1,5 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   Index,
   PrimaryGeneratedColumn,
@@ -13,21 +12,18 @@ export class FeedbackTicketWallet {
   id: number;
 
   @Index({ unique: true })
-  @Column()
+  @Column({ name: 'user_id', type: 'int' })
   userId: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'doc_tickets', type: 'int', default: 0 })
   doc: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'video_tickets', type: 'int', default: 0 })
   video: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'premium_tickets', type: 'int', default: 0 })
   premium: number;
 
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

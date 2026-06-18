@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Logger,
   Param,
   Post,
   Res,
@@ -23,6 +24,8 @@ import { readPaymentEnv } from './payment-gateway.util';
 
 @Controller('payments')
 export class PaymentsController {
+  private readonly logger = new Logger(PaymentsController.name);
+
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly paymentGateway: PaymentGatewayService,
@@ -76,8 +79,23 @@ export class PaymentsController {
   /** PG 인증 완료 후 form POST (브라우저 리다이렉트) */
   @Post('return')
   async paymentReturn(@Body() body: PaymentAuthReturnBody, @Res() res: Response) {
-    const url = await this.paymentsService.handlePaymentReturn(body);
-    return res.redirect(302, url);
+    try {
+      const url = await this.paymentsService.handlePaymentReturn(body);
+      return res.redirect(302, url);
+    } catch (e) {
+      this.logger.error(
+        `결제 return 처리 실패: ${e instanceof Error ? e.message : e}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      const msg = encodeURIComponent(
+        '결제 처리 중 서버 오류가 발생했습니다. 결제 내역을 확인해 주세요.',
+      );
+      const origin = (process.env.CORS_ORIGIN ?? 'http://localhost:5174').replace(
+        /\/$/,
+        '',
+      );
+      return res.redirect(302, `${origin}/checkout/complete?status=fail&msg=${msg}`);
+    }
   }
 
   /** 이전 콜백 URL 호환 */
@@ -86,7 +104,6 @@ export class PaymentsController {
     @Body() body: PaymentAuthReturnBody,
     @Res() res: Response,
   ) {
-    const url = await this.paymentsService.handlePaymentReturn(body);
-    return res.redirect(302, url);
+    return this.paymentReturn(body, res);
   }
 }

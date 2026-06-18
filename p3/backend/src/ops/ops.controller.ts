@@ -21,7 +21,11 @@ import { NotificationsService } from './notifications.service';
 import { WebhooksService } from './webhooks.service';
 import { UpsertSubscriptionDto } from './dto/upsert-subscription.dto';
 import { CreateWebhookDto } from './dto/create-webhook.dto';
+import { RunSchedulerDto } from './dto/run-scheduler.dto';
+import { EmitTestEventDto } from './dto/emit-test-event.dto';
 import { OPS_EVENTS } from './ops.constants';
+import { SchedulerService } from './scheduler.service';
+import { EventsService } from './events.service';
 
 @Controller()
 export class OpsController {
@@ -30,6 +34,8 @@ export class OpsController {
     private readonly metrics: MetricsService,
     private readonly notifications: NotificationsService,
     private readonly webhooks: WebhooksService,
+    private readonly scheduler: SchedulerService,
+    private readonly events: EventsService,
   ) {}
 
   @Get('ops/events')
@@ -122,5 +128,50 @@ export class OpsController {
       });
       return r;
     });
+  }
+
+  /** 시연·점검용 — 스케줄 작업 즉시 실행 */
+  @Post('admin/ops/scheduler/run')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async runScheduler(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RunSchedulerDto,
+  ) {
+    const expired_orders = await this.scheduler.runExpireStalePaymentOrders(
+      dto.force_expire_pending === true,
+    );
+    const reminded_teachers = await this.scheduler.runPendingFeedbackReminders();
+    await this.audit.log({
+      userId: user.id,
+      action: 'scheduler.run',
+      resource: 'ops',
+      meta: { expired_orders, reminded_teachers, force: !!dto.force_expire_pending },
+    });
+    return { expired_orders, reminded_teachers };
+  }
+
+  /** 시연용 — Webhook·알림 구독 테스트 */
+  @Post('admin/ops/test-event')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  async emitTestEvent(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: EmitTestEventDto,
+  ) {
+    const payload = {
+      demo: true,
+      event: dto.event,
+      at: new Date().toISOString(),
+    };
+    const userIds = dto.user_ids?.length ? dto.user_ids : [user.id];
+    await this.events.emit(dto.event, payload, userIds);
+    await this.audit.log({
+      userId: user.id,
+      action: 'ops.test_event',
+      resource: 'event',
+      meta: { event: dto.event, user_ids: userIds },
+    });
+    return { ok: true, event: dto.event, user_ids: userIds };
   }
 }

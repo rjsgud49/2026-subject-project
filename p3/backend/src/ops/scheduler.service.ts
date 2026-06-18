@@ -21,24 +21,34 @@ export class SchedulerService {
   /** 미결제 주문 24시간 경과 시 failed 처리 */
   @Cron(CronExpression.EVERY_HOUR)
   async expireStalePaymentOrders() {
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const stale = await this.orderRepo.find({
-      where: { status: 'pending', createdAt: LessThan(cutoff) },
-      take: 100,
-    });
-    for (const o of stale) {
-      o.status = 'failed';
-      o.niceResultMsg = '결제 시간 초과';
-      await this.orderRepo.save(o);
-    }
-    if (stale.length) {
-      this.logger.log(`만료 처리된 pending 주문: ${stale.length}건`);
-    }
+    await this.runExpireStalePaymentOrders();
   }
 
   /** 매일 09:00 — 미답변 피드백이 있는 강사에게 알림 (구독 시) */
   @Cron('0 9 * * *')
   async remindPendingFeedback() {
+    await this.runPendingFeedbackReminders();
+  }
+
+  /** @returns 만료 처리된 주문 수 */
+  async runExpireStalePaymentOrders(forceAllPending = false) {
+    const where = forceAllPending
+      ? { status: 'pending' as const }
+      : { status: 'pending' as const, createdAt: LessThan(new Date(Date.now() - 24 * 60 * 60 * 1000)) };
+    const stale = await this.orderRepo.find({ where, take: 100 });
+    for (const o of stale) {
+      o.status = 'failed';
+      o.niceResultMsg = forceAllPending ? '결제 시간 초과(시연)' : '결제 시간 초과';
+      await this.orderRepo.save(o);
+    }
+    if (stale.length) {
+      this.logger.log(`만료 처리된 pending 주문: ${stale.length}건`);
+    }
+    return stale.length;
+  }
+
+  /** @returns 알림을 보낸 강사 수 */
+  async runPendingFeedbackReminders() {
     const pending = await this.feedbackRepo.find({
       where: { status: 'pending' },
       relations: ['teacher'],
@@ -55,5 +65,6 @@ export class SchedulerService {
         [teacherId],
       );
     }
+    return byTeacher.size;
   }
 }

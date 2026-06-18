@@ -85,11 +85,19 @@ export class NotificationsService {
 
   async dispatch(event: OpsEventType, payload: Record<string, unknown>, userIds: number[]) {
     if (!userIds.length) return;
-    const active = await this.subRepo
-      .createQueryBuilder('s')
-      .where('s.enabled = :on', { on: true })
-      .andWhere('s.user_id IN (:...ids)', { ids: userIds })
-      .getMany();
+    let active: NotificationSubscription[] = [];
+    try {
+      active = await this.subRepo
+        .createQueryBuilder('s')
+        .where('s.enabled = :on', { on: true })
+        .andWhere('s.user_id IN (:...ids)', { ids: userIds })
+        .getMany();
+    } catch (e) {
+      this.logger.warn(
+        `알림 구독 조회 실패: ${e instanceof Error ? e.message : e}`,
+      );
+      return;
+    }
 
     const title = `[P3 LMS] ${event}`;
     const text = JSON.stringify(payload, null, 2);
@@ -111,23 +119,36 @@ export class NotificationsService {
     }
   }
 
+  private smtpPass(): string {
+    const raw = process.env.SMTP_PASS ?? '';
+    return raw.replace(/^["']|["']$/g, '');
+  }
+
   private async sendEmail(to: string, subject: string, body: string) {
     const host = process.env.SMTP_HOST;
     if (!host) {
       this.logger.log(`[email→${to}] ${subject}\n${body.slice(0, 200)}`);
       return;
     }
+    const port = parseInt(process.env.SMTP_PORT ?? '587', 10);
+    const secure = process.env.SMTP_SECURE === 'true';
+    const requireTLS =
+      process.env.SMTP_REQUIRE_TLS === 'true' || (!secure && port === 587);
     const nodemailer = await import('nodemailer');
     const transport = nodemailer.createTransport({
       host,
-      port: parseInt(process.env.SMTP_PORT ?? '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
+      port,
+      secure,
+      requireTLS,
       auth: process.env.SMTP_USER
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? '' }
+        ? { user: process.env.SMTP_USER, pass: this.smtpPass() }
         : undefined,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
     });
     await transport.sendMail({
-      from: process.env.SMTP_FROM ?? 'noreply@p3-lms.local',
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER ?? 'noreply@p3-lms.local',
       to,
       subject,
       text: body,

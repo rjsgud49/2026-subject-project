@@ -68,7 +68,15 @@ export class WebhooksService {
   }
 
   async dispatch(event: OpsEventType, payload: Record<string, unknown>) {
-    const endpoints = await this.endpointRepo.find({ where: { enabled: true } });
+    let endpoints: WebhookEndpoint[] = [];
+    try {
+      endpoints = await this.endpointRepo.find({ where: { enabled: true } });
+    } catch (e) {
+      this.logger.warn(
+        `Webhook 조회 실패: ${e instanceof Error ? e.message : e}`,
+      );
+      return;
+    }
     const body = JSON.stringify({ event, payload, at: new Date().toISOString() });
     for (const ep of endpoints) {
       const events = this.parseEvents(ep.eventsJson);

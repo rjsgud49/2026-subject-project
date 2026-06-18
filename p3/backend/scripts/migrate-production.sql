@@ -36,20 +36,9 @@ CREATE TABLE IF NOT EXISTS p3_study_notes (
   UNIQUE (enrollment_id, video_id)
 );
 
--- p3_notification_subscriptions
-CREATE TABLE IF NOT EXISTS p3_notification_subscriptions (
-  id serial PRIMARY KEY,
-  user_id int NOT NULL,
-  event_type varchar(40) NOT NULL,
-  channel varchar(20) NOT NULL,
-  destination varchar(255) NOT NULL,
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, event_type, channel)
-);
+-- p3_notification_subscriptions / webhooks: scripts/migrate-ops-tables.sql 실행
 
--- p3_audit_logs
-CREATE TABLE IF NOT EXISTS p3_audit_logs (
+-- p3_audit_logsCREATE TABLE IF NOT EXISTS p3_audit_logs (
   id bigserial PRIMARY KEY,
   actor_id int,
   action varchar(80) NOT NULL,
@@ -59,22 +48,6 @@ CREATE TABLE IF NOT EXISTS p3_audit_logs (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- p3_webhook_endpoints
-CREATE TABLE IF NOT EXISTS p3_webhook_endpoints (
-  id serial PRIMARY KEY,
-  url varchar(500) NOT NULL,
-  secret varchar(128),
-  events_json text NOT NULL DEFAULT '[]',
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+-- p3_webhook_endpoints: scripts/migrate-ops-tables.sql
 
--- p3_feedback_ticket_wallets
-CREATE TABLE IF NOT EXISTS p3_feedback_ticket_wallets (
-  id serial PRIMARY KEY,
-  user_id int NOT NULL UNIQUE,
-  doc_tickets int NOT NULL DEFAULT 0,
-  video_tickets int NOT NULL DEFAULT 0,
-  premium_tickets int NOT NULL DEFAULT 0,
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- p3_feedback_ticket_wallets: scripts/migrate-ops-tables.sql

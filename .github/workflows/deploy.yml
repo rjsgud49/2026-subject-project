@@ -3,17 +3,23 @@ name: Deploy to EC2
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Deploy via SSH (password)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             set -e
             cd ~/2026-subject-project
@@ -24,6 +30,7 @@ jobs:
             pm2 restart p3-backend --update-env || pm2 start ecosystem.config.cjs
             curl -sf http://127.0.0.1:3000/api/v1/health || (echo "백엔드 헬스체크 실패 — pm2 logs p3-backend 확인" && exit 1)
             cd ../frontend
-            npm install
+            NODE_ENV=development npm install --include=dev
             npm run build
+            test -f dist/index.html || (echo "프론트 dist 빌드 실패" && exit 1)
             echo "배포 완료"

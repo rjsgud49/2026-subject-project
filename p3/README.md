@@ -132,6 +132,8 @@ npm run dev
 
 ## 배포 (EC2)
 
+**GitHub Actions 연결 (비밀번호 + 서버 주소):** [`docs/p3/github-actions-배포가이드.md`](../docs/p3/github-actions-배포가이드.md) — EC2 준비 → `bash p3/deploy/setup-github-actions.sh` 로 Secret 한 번에 등록.
+
 GitHub Actions가 `git pull` 후 빌드·`pm2 restart`만 수행합니다. **`.env`는 Git에 포함되지 않으므로 서버에 직접 설정**해야 합니다.
 
 ```bash
@@ -184,6 +186,40 @@ bash scripts/ec2-recover.sh
 
 로컬 DB 비밀번호 오류(`password authentication failed`)면 `p3/backend/.env`의 `DB_PASSWORD`를 PostgreSQL 실제 비밀번호와 맞추세요.
 
+### 결제 후 `ERR_CONNECTION_TIMED_OUT` (`/api/v1/payments/return`)
+
+PG가 브라우저를 **returnUrl**(`https://olp.rjsgud.com/api/v1/payments/return`)로 보내는데, **443(HTTPS)에 서버가 없거나** 보안그룹이 막혀 있으면 발생합니다. 백엔드(`127.0.0.1:3000`)만 살아 있어도 **공개 URL**이 열려 있어야 합니다.
+
+**EC2 점검 (SSH):**
+
+```bash
+sudo systemctl status nginx
+sudo ss -tlnp | grep -E ':80|:443'
+curl -sI http://127.0.0.1/api/v1/payments/config | head -3
+```
+
+**AWS 콘솔:** EC2 보안그룹 인바운드에 **80, 443** (`0.0.0.0/0`) 허용.
+
+**HTTPS 설정 (권장):**
+
+```bash
+sudo cp ~/2026-subject-project/p3/deploy/nginx-olp.example.conf /etc/nginx/conf.d/olp.conf
+sudo nginx -t && sudo systemctl restart nginx
+sudo dnf install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d olp.rjsgud.com
+```
+
+`p3/backend/.env`:
+
+```env
+NICEPAY_RETURN_BASE=https://olp.rjsgud.com
+CORS_ORIGIN=https://olp.rjsgud.com
+```
+
+**샌드박스 임시 테스트** (HTTPS 미설정 시만): `NICEPAY_RETURN_BASE=http://olp.rjsgud.com` → `pm2 restart p3-backend --update-env`. 브라우저도 `http://` 로 접속.
+
+**PC에서 확인:** `https://olp.rjsgud.com` 이 열리는지 먼저 확인. EC2 안에서 공인 IP로 `curl` 하는 것은 AWS에서 실패할 수 있음.
+
 ## Docker (로컬 DB)
 
 
@@ -219,4 +255,5 @@ PostgreSQL만 띄웁니다. 앱은 위 npm 명령으로 실행하세요.
 
 
 - `docs/p3/기획서.md` — P3 범위·이벤트·API 요약
+- `docs/p3/시연가이드.md` — **개선사항 슬라이드별 시연 경로·계정·시나리오**
 
